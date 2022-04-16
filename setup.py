@@ -4,11 +4,11 @@ setup(
   packages = ['coperception'],
   version = '0.0.1',
   license='apache-2.0',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
-  description = 'A library for collaborative perception.',   # Give a short description about your library
-  author = 'AI4CE Lab @NYU',                   # Type in your name
-  author_email = 'dm4524@nyu.edu',      # Type in your E-Mail
-  url = 'https://ai4ce.github.io/',   # Provide either the link to your github or to your website
-#   download_url = 'https://github.com/user/reponame/archive/v_01.tar.gz',    # I explain this later on
+  description = 'A library for collaborative perception.',
+  author = 'AI4CE Lab @NYU',
+  author_email = 'dm4524@nyu.edu',
+  url = 'https://ai4ce.github.io/',
+  download_url = 'https://github.com/dekunma/coperception/releases/tag/v0.0.1-alpha.tar.gz', 
   keywords = ['computer-vision', 'deep-learning', 'autonomous-driving', 'collaborative-learning', 'knowledge-distillation', 'communication-networks', 'multi-agent-learning', 'multi-agent-system', '3d-object-detection', 'graph-learning', 'point-cloud-processing', 'v2x-communication', 'multi-agent-perception', '3d-scene-understanding'],   # Keywords that define your package best
   install_requires=[           
           'numpy',
