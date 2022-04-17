@@ -2,7 +2,17 @@ from coperception.models.det.base.NonIntermediateModelBase import NonIntermediat
 
 
 class FaFNet(NonIntermediateModelBase):
-    """The model of early fusion. Used as lower-bound and upper-bound depending on the input features (fused or not)."""    
+    """The model of early fusion. Used as lower-bound and upper-bound depending on the input features (fused or not).
+    
+    https://arxiv.org/pdf/2012.12395.pdf
+
+    Args:
+        config (object): The Config object.
+        layer (int, optional): Collaborate on which layer. Defaults to 3.
+        in_channels (int, optional): The input channels. Defaults to 13.
+        kd_flag (bool, optional): Whether to use knowledge distillation (for DiscoNet to ues). Defaults to True.
+        num_agent (int, optional): The number of agents (including RSU). Defaults to 5.
+    """    
     def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5):
         super(FaFNet, self).__init__(config, layer, in_channels, kd_flag, num_agent)
 

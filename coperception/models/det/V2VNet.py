@@ -4,7 +4,11 @@ from coperception.models.det.base.IntermediateModelBase import IntermediateModel
 import torch.nn.functional as F
 
 class V2VNet(IntermediateModelBase):
-    """V2V Net [https://arxiv.org/abs/2008.07519]"""
+    """V2V Net 
+    
+    https://arxiv.org/abs/2008.07519
+    
+    """
     def __init__(self, config, gnn_iter_times, layer, layer_channel, in_channels=13, num_agent=5):
         super(V2VNet, self).__init__(config, layer, in_channels, num_agent=num_agent)
 

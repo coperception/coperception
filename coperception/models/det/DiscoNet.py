@@ -5,7 +5,18 @@ from coperception.models.det.base.IntermediateModelBase import IntermediateModel
 
 
 class DiscoNet(IntermediateModelBase):
-    """DiscoNet. [https://github.com/ai4ce/DiscoNet]"""    
+    """DiscoNet.
+
+        https://github.com/ai4ce/DiscoNet
+
+        Args:
+            config (object): The config object.
+            layer (int, optional): Collaborate on which layer. Defaults to 3.
+            in_channels (int, optional): The input channels. Defaults to 13.
+            kd_flag (bool, optional): Whether to use knowledge distillation. Defaults to True.
+            num_agent (int, optional): The number of agents (including RSU). Defaults to 5.
+
+    """    
     def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5):
         super(DiscoNet, self).__init__(config, layer, in_channels, kd_flag, num_agent)
         if self.layer == 3:
@@ -14,6 +25,18 @@ class DiscoNet(IntermediateModelBase):
             self.pixel_weighted_fusion = PixelWeightedFusionSoftmax(128)
 
     def forward(self, bevs, trans_matrices, num_agent_tensor, batch_size=1):
+        """Forward pass.
+
+        Args:
+            bevs (tensor): BEV data
+            trans_matrices (tensor): Matrix for transforming features among agents.
+            num_agent_tensor (tensor): Number of agents to communicate for each agent.
+            batch_size (int, optional): The batch size. Defaults to 1.
+
+        Returns:
+            result, all decoded layers, and fused feature maps if kd_flag is set.
+            else return result and list of weights for each agent.
+        """        
 
         bevs = bevs.permute(0, 1, 4, 2, 3)  # (Batch, seq, z, h, w)
         encoded_layers = self.u_encoder(bevs)

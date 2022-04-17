@@ -8,7 +8,11 @@ from coperception.models.det.backbone.Backbone import LidarEncoder, Conv2DBatchN
 from coperception.models.det.base.IntermediateModelBase import IntermediateModelBase
 
 class When2com(IntermediateModelBase):
-    """When2com [https://github.com/GT-RIPL/MultiAgentPerception]"""
+    """When2com 
+    
+    https://github.com/GT-RIPL/MultiAgentPerception
+    
+    """
     def __init__(self, config, n_classes=21, in_channels=13, feat_channel=512, feat_squeezer=-1, attention='additive',
                  has_query=True, sparse=False, layer=3, warp_flag=1, image_size=512,
                  shared_img_encoder='unified', key_size=1024, query_size=32, num_agent=5):
