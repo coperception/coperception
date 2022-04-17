@@ -1,0 +1,8 @@
+site_name: CoPerception
+
+theme:
+  name: readthedocs
+
+plugins:
+  - search
+  - mkdocstrings
