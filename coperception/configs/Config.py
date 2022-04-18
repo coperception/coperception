@@ -1,6 +1,7 @@
 import numpy as np
 import math
 class Config(object):
+	"""The config class"""
 	def __init__(self,split,binary=True,only_det=True,code_type='faf',loss_type='faf_loss',savepath='',root='',is_cross_road=False,use_vis=False):
 		# for segmentaion task only
 		# =========================
