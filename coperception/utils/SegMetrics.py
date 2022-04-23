@@ -12,7 +12,7 @@ def fast_hist(a, b, n):
     :return: np.ndarray with shape (n, n)
     """
     k = (a >= 0) & (a < n)
-    return np.bincount(n * a[k].astype(int) + b[k], minlength=n ** 2).reshape(n, n)
+    return np.bincount(n * a[k].astype(int) + b[k], minlength=n**2).reshape(n, n)
 
 
 def per_class_iu(hist):
@@ -24,7 +24,7 @@ def per_class_iu(hist):
     np.seterr(divide="ignore", invalid="ignore")
     res = np.diag(hist) / (hist.sum(1) + hist.sum(0) - np.diag(hist))
     np.seterr(divide="warn", invalid="warn")
-    res[np.isnan(res)] = 0.
+    res[np.isnan(res)] = 0.0
     return res
 
 
@@ -33,20 +33,23 @@ class ComputeIoU(object):
     IoU: Intersection over Union
     """
 
-
     def __init__(self, num_class):
         self.num_class = num_class
-        self.cfsmatrix = np.zeros((self.num_class, self.num_class), dtype="uint64")  # confusion matrix
+        self.cfsmatrix = np.zeros(
+            (self.num_class, self.num_class), dtype="uint64"
+        )  # confusion matrix
         self.ious = dict()
         self.config = Config(None)
-
 
     def get_cfsmatrix(self):
         return self.cfsmatrix
 
     def get_ious(self):
         ious_by_class = per_class_iu(self.cfsmatrix)
-        self.ious = {self.config.class_idx_to_name[idx]: ious_by_class[idx] for idx in range(self.num_class)}
+        self.ious = {
+            self.config.class_idx_to_name[idx]: ious_by_class[idx]
+            for idx in range(self.num_class)
+        }
 
         return self.ious
 
@@ -55,8 +58,12 @@ class ComputeIoU(object):
         total_iou = 0
         count = 0
         for key, value in self.ious.items():
-            if isinstance(ignore, list) and key in ignore or \
-                    isinstance(ignore, int) and key == ignore:
+            if (
+                isinstance(ignore, list)
+                and key in ignore
+                or isinstance(ignore, int)
+                and key == ignore
+            ):
                 continue
             total_iou += value
             count += 1
@@ -74,4 +81,6 @@ class ComputeIoU(object):
 
         assert pred.shape == label.shape
 
-        self.cfsmatrix += fast_hist(pred.reshape(-1), label.reshape(-1), self.num_class).astype("uint64")
+        self.cfsmatrix += fast_hist(
+            pred.reshape(-1), label.reshape(-1), self.num_class
+        ).astype("uint64")

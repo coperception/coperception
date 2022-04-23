@@ -2,7 +2,9 @@ from coperception.models.seg.SegModelBase import SegModelBase
 
 
 class UNet(SegModelBase):
-    def __init__(self, n_channels, n_classes, bilinear=True, num_agent=5, kd_flag=False):
+    def __init__(
+        self, n_channels, n_classes, bilinear=True, num_agent=5, kd_flag=False
+    ):
         super().__init__(n_channels, n_classes, bilinear, num_agent=num_agent)
         self.kd_flag = kd_flag
 

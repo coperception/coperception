@@ -3,8 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from coperception.models.det.base.FusionBase import FusionBase
 
+
 class CatFusion(FusionBase):
     """Concatenate fusion. Used as a lower-bound in the DisoNet paper."""
+
     def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5):
         super(CatFusion, self).__init__(config, layer, in_channels, kd_flag, num_agent)
         self._modulation_layer_3 = ModulationLayer3()
@@ -14,6 +16,7 @@ class CatFusion(FusionBase):
         cat_feat = torch.cat([self.tg_agent, mean_feat], dim=0)
         cat_feat = cat_feat.unsqueeze(0)  # [1, 1, c, h, w]
         return self._modulation_layer_3(cat_feat)
+
 
 class ModulationLayer3(nn.Module):
     def __init__(self):

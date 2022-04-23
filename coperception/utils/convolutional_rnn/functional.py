@@ -2,6 +2,7 @@ from functools import partial
 
 import torch
 import torch.nn.functional as F
+
 try:
     # pytorch<=0.4.1
     from torch.nn._functions.thnn import rnnFusedPointwise as fusedBackend
@@ -12,7 +13,7 @@ from .utils import _single, _pair, _triple
 
 
 def RNNReLUCell(input, hidden, w_ih, w_hh, b_ih=None, b_hh=None, linear_func=None):
-    """ Copied from torch.nn._functions.rnn and modified """
+    """Copied from torch.nn._functions.rnn and modified"""
     if linear_func is None:
         linear_func = F.linear
     hy = F.relu(linear_func(input, w_ih, b_ih) + linear_func(hidden, w_hh, b_hh))
@@ -20,7 +21,7 @@ def RNNReLUCell(input, hidden, w_ih, w_hh, b_ih=None, b_hh=None, linear_func=Non
 
 
 def RNNTanhCell(input, hidden, w_ih, w_hh, b_ih=None, b_hh=None, linear_func=None):
-    """ Copied from torch.nn._functions.rnn and modified """
+    """Copied from torch.nn._functions.rnn and modified"""
     if linear_func is None:
         linear_func = F.linear
     hy = torch.tanh(linear_func(input, w_ih, b_ih) + linear_func(hidden, w_hh, b_hh))
@@ -28,14 +29,18 @@ def RNNTanhCell(input, hidden, w_ih, w_hh, b_ih=None, b_hh=None, linear_func=Non
 
 
 def LSTMCell(input, hidden, w_ih, w_hh, b_ih=None, b_hh=None, linear_func=None):
-    """ Copied from torch.nn._functions.rnn and modified """
+    """Copied from torch.nn._functions.rnn and modified"""
     if linear_func is None:
         linear_func = F.linear
     if input.is_cuda and linear_func is F.linear and fusedBackend is not None:
         igates = linear_func(input, w_ih)
         hgates = linear_func(hidden[0], w_hh)
         state = fusedBackend.LSTMFused.apply
-        return state(igates, hgates, hidden[1]) if b_ih is None else state(igates, hgates, hidden[1], b_ih, b_hh)
+        return (
+            state(igates, hgates, hidden[1])
+            if b_ih is None
+            else state(igates, hgates, hidden[1], b_ih, b_hh)
+        )
 
     hx, cx = hidden
     gates = linear_func(input, w_ih, b_ih) + linear_func(hx, w_hh, b_hh)
@@ -52,8 +57,9 @@ def LSTMCell(input, hidden, w_ih, w_hh, b_ih=None, b_hh=None, linear_func=None):
     return hy, cy
 
 
-def PeepholeLSTMCell(input, hidden, w_ih, w_hh, w_pi, w_pf, w_po,
-                     b_ih=None, b_hh=None, linear_func=None):
+def PeepholeLSTMCell(
+    input, hidden, w_ih, w_hh, w_pi, w_pf, w_po, b_ih=None, b_hh=None, linear_func=None
+):
     if linear_func is None:
         linear_func = F.linear
     hx, cx = hidden
@@ -76,14 +82,16 @@ def PeepholeLSTMCell(input, hidden, w_ih, w_hh, w_pi, w_pf, w_po,
 
 
 def GRUCell(input, hidden, w_ih, w_hh, b_ih=None, b_hh=None, linear_func=None):
-    """ Copied from torch.nn._functions.rnn and modified """
+    """Copied from torch.nn._functions.rnn and modified"""
     if linear_func is None:
         linear_func = F.linear
     if input.is_cuda and linear_func is F.linear and fusedBackend is not None:
         gi = linear_func(input, w_ih)
         gh = linear_func(hidden, w_hh)
         state = fusedBackend.GRUFused.apply
-        return state(gi, gh, hidden) if b_ih is None else state(gi, gh, hidden, b_ih, b_hh)
+        return (
+            state(gi, gh, hidden) if b_ih is None else state(gi, gh, hidden, b_ih, b_hh)
+        )
     gi = linear_func(input, w_ih, b_ih)
     gh = linear_func(hidden, w_hh, b_hh)
     i_r, i_i, i_n = gi.chunk(3, 1)
@@ -98,13 +106,13 @@ def GRUCell(input, hidden, w_ih, w_hh, b_ih=None, b_hh=None, linear_func=None):
 
 
 def StackedRNN(inners, num_layers, lstm=False, dropout=0, train=True):
-    """ Copied from torch.nn._functions.rnn and modified """
+    """Copied from torch.nn._functions.rnn and modified"""
 
     num_directions = len(inners)
     total_layers = num_layers * num_directions
 
     def forward(input, hidden, weight, batch_sizes):
-        assert(len(weight) == total_layers)
+        assert len(weight) == total_layers
         next_hidden = []
         ch_dim = input.dim() - weight[0][0].dim() + 1
 
@@ -129,11 +137,12 @@ def StackedRNN(inners, num_layers, lstm=False, dropout=0, train=True):
             next_h, next_c = zip(*next_hidden)
             next_hidden = (
                 torch.cat(next_h, 0).view(total_layers, *next_h[0].size()),
-                torch.cat(next_c, 0).view(total_layers, *next_c[0].size())
+                torch.cat(next_c, 0).view(total_layers, *next_c[0].size()),
             )
         else:
             next_hidden = torch.cat(next_hidden, 0).view(
-                total_layers, *next_hidden[0].size())
+                total_layers, *next_hidden[0].size()
+            )
 
         return next_hidden, input
 
@@ -141,7 +150,8 @@ def StackedRNN(inners, num_layers, lstm=False, dropout=0, train=True):
 
 
 def Recurrent(inner, reverse=False):
-    """ Copied from torch.nn._functions.rnn without any modification """
+    """Copied from torch.nn._functions.rnn without any modification"""
+
     def forward(input, hidden, weight, batch_sizes):
         output = []
         steps = range(input.size(0) - 1, -1, -1) if reverse else range(input.size(0))
@@ -160,7 +170,7 @@ def Recurrent(inner, reverse=False):
 
 
 def variable_recurrent_factory(inner, reverse=False):
-    """ Copied from torch.nn._functions.rnn without any modification """
+    """Copied from torch.nn._functions.rnn without any modification"""
     if reverse:
         return VariableRecurrentReverse(inner)
     else:
@@ -168,7 +178,8 @@ def variable_recurrent_factory(inner, reverse=False):
 
 
 def VariableRecurrent(inner):
-    """ Copied from torch.nn._functions.rnn without any modification """
+    """Copied from torch.nn._functions.rnn without any modification"""
+
     def forward(input, hidden, weight, batch_sizes):
         output = []
         input_offset = 0
@@ -178,7 +189,7 @@ def VariableRecurrent(inner):
         if flat_hidden:
             hidden = (hidden,)
         for batch_size in batch_sizes:
-            step_input = input[input_offset:input_offset + batch_size]
+            step_input = input[input_offset : input_offset + batch_size]
             input_offset += batch_size
 
             dec = last_batch_size - batch_size
@@ -208,7 +219,8 @@ def VariableRecurrent(inner):
 
 
 def VariableRecurrentReverse(inner):
-    """ Copied from torch.nn._functions.rnn without any modification """
+    """Copied from torch.nn._functions.rnn without any modification"""
+
     def forward(input, hidden, weight, batch_sizes):
         output = []
         input_offset = input.size(0)
@@ -218,15 +230,17 @@ def VariableRecurrentReverse(inner):
         if flat_hidden:
             hidden = (hidden,)
             initial_hidden = (initial_hidden,)
-        hidden = tuple(h[:batch_sizes[-1]] for h in hidden)
+        hidden = tuple(h[: batch_sizes[-1]] for h in hidden)
         for i in reversed(range(len(batch_sizes))):
             batch_size = batch_sizes[i]
             inc = batch_size - last_batch_size
             if inc > 0:
-                hidden = tuple(torch.cat((h, ih[last_batch_size:batch_size]), 0)
-                               for h, ih in zip(hidden, initial_hidden))
+                hidden = tuple(
+                    torch.cat((h, ih[last_batch_size:batch_size]), 0)
+                    for h, ih in zip(hidden, initial_hidden)
+                )
             last_batch_size = batch_size
-            step_input = input[input_offset - batch_size:input_offset]
+            step_input = input[input_offset - batch_size : input_offset]
             input_offset -= batch_size
 
             if flat_hidden:
@@ -253,51 +267,77 @@ def ConvNdWithSamePadding(convndim=2, stride=1, dilation=1, groups=1):
         elif convndim == 3:
             ntuple = _triple
         else:
-            raise ValueError('convndim must be 1, 2, or 3, but got {}'.format(convndim))
+            raise ValueError("convndim must be 1, 2, or 3, but got {}".format(convndim))
 
         if input.dim() != convndim + 2:
-            raise RuntimeError('Input dim must be {}, bot got {}'.format(convndim + 2, input.dim()))
+            raise RuntimeError(
+                "Input dim must be {}, bot got {}".format(convndim + 2, input.dim())
+            )
         if w.dim() != convndim + 2:
-            raise RuntimeError('w must be {}, bot got {}'.format(convndim + 2, w.dim()))
+            raise RuntimeError("w must be {}, bot got {}".format(convndim + 2, w.dim()))
 
         insize = input.shape[2:]
         kernel_size = w.shape[2:]
         _stride = ntuple(stride)
         _dilation = ntuple(dilation)
 
-        ps = [(i + 1 - h + s * (h - 1) + d * (k - 1)) // 2
-              for h, k, s, d in list(zip(insize, kernel_size, _stride, _dilation))[::-1] for i in range(2)]
+        ps = [
+            (i + 1 - h + s * (h - 1) + d * (k - 1)) // 2
+            for h, k, s, d in list(zip(insize, kernel_size, _stride, _dilation))[::-1]
+            for i in range(2)
+        ]
         # Padding to make the output shape to have the same shape as the input
-        input = F.pad(input, ps, 'constant', 0)
-        return getattr(F, 'conv{}d'.format(convndim))(
-            input, w, b, stride=_stride, padding=ntuple(0), dilation=_dilation, groups=groups)
+        input = F.pad(input, ps, "constant", 0)
+        return getattr(F, "conv{}d".format(convndim))(
+            input,
+            w,
+            b,
+            stride=_stride,
+            padding=ntuple(0),
+            dilation=_dilation,
+            groups=groups,
+        )
+
     return forward
 
 
 def _conv_cell_helper(mode, convndim=2, stride=1, dilation=1, groups=1):
-    linear_func = ConvNdWithSamePadding(convndim=convndim, stride=stride, dilation=dilation, groups=groups)
+    linear_func = ConvNdWithSamePadding(
+        convndim=convndim, stride=stride, dilation=dilation, groups=groups
+    )
 
-    if mode == 'RNN_RELU':
+    if mode == "RNN_RELU":
         cell = partial(RNNReLUCell, linear_func=linear_func)
-    elif mode == 'RNN_TANH':
+    elif mode == "RNN_TANH":
         cell = partial(RNNTanhCell, linear_func=linear_func)
-    elif mode == 'LSTM':
+    elif mode == "LSTM":
         cell = partial(LSTMCell, linear_func=linear_func)
-    elif mode == 'GRU':
+    elif mode == "GRU":
         cell = partial(GRUCell, linear_func=linear_func)
-    elif mode == 'PeepholeLSTM':
+    elif mode == "PeepholeLSTM":
         cell = partial(PeepholeLSTMCell, linear_func=linear_func)
     else:
-        raise Exception('Unknown mode: {}'.format(mode))
+        raise Exception("Unknown mode: {}".format(mode))
     return cell
 
 
 def AutogradConvRNN(
-        mode, num_layers=1, batch_first=False,
-        dropout=0, train=True, bidirectional=False, variable_length=False,
-        convndim=2, stride=1, dilation=1, groups=1):
-    """ Copied from torch.nn._functions.rnn and modified """
-    cell = _conv_cell_helper(mode, convndim=convndim, stride=stride, dilation=dilation, groups=groups)
+    mode,
+    num_layers=1,
+    batch_first=False,
+    dropout=0,
+    train=True,
+    bidirectional=False,
+    variable_length=False,
+    convndim=2,
+    stride=1,
+    dilation=1,
+    groups=1,
+):
+    """Copied from torch.nn._functions.rnn and modified"""
+    cell = _conv_cell_helper(
+        mode, convndim=convndim, stride=stride, dilation=dilation, groups=groups
+    )
 
     rec_factory = variable_recurrent_factory if variable_length else Recurrent
 
@@ -306,7 +346,13 @@ def AutogradConvRNN(
     else:
         layer = (rec_factory(cell),)
 
-    func = StackedRNN(layer, num_layers, (mode in ('LSTM', 'PeepholeLSTM')), dropout=dropout, train=train)
+    func = StackedRNN(
+        layer,
+        num_layers,
+        (mode in ("LSTM", "PeepholeLSTM")),
+        dropout=dropout,
+        train=train,
+    )
 
     def forward(input, weight, hidden, batch_sizes):
         if batch_first and batch_sizes is None:

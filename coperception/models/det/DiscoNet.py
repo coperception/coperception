@@ -7,16 +7,17 @@ from coperception.models.det.base.IntermediateModelBase import IntermediateModel
 class DiscoNet(IntermediateModelBase):
     """DiscoNet.
 
-        https://github.com/ai4ce/DiscoNet
+    https://github.com/ai4ce/DiscoNet
 
-        Args:
-            config (object): The config object.
-            layer (int, optional): Collaborate on which layer. Defaults to 3.
-            in_channels (int, optional): The input channels. Defaults to 13.
-            kd_flag (bool, optional): Whether to use knowledge distillation. Defaults to True.
-            num_agent (int, optional): The number of agents (including RSU). Defaults to 5.
+    Args:
+        config (object): The config object.
+        layer (int, optional): Collaborate on which layer. Defaults to 3.
+        in_channels (int, optional): The input channels. Defaults to 13.
+        kd_flag (bool, optional): Whether to use knowledge distillation. Defaults to True.
+        num_agent (int, optional): The number of agents (including RSU). Defaults to 5.
 
-    """    
+    """
+
     def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5):
         super(DiscoNet, self).__init__(config, layer, in_channels, kd_flag, num_agent)
         if self.layer == 3:
@@ -36,7 +37,7 @@ class DiscoNet(IntermediateModelBase):
         Returns:
             result, all decoded layers, and fused feature maps if kd_flag is set.
             else return result and list of weights for each agent.
-        """        
+        """
 
         bevs = bevs.permute(0, 1, 4, 2, 3)  # (Batch, seq, z, h, w)
         encoded_layers = self.u_encoder(bevs)
@@ -47,8 +48,11 @@ class DiscoNet(IntermediateModelBase):
         feat_list = super().build_feature_list(batch_size, feat_maps)
 
         local_com_mat = super().build_local_communication_matrix(
-            feat_list)  # [2 5 512 16 16] [batch, agent, channel, height, width]
-        local_com_mat_update = super().build_local_communication_matrix(feat_list)  # to avoid the inplace operation
+            feat_list
+        )  # [2 5 512 16 16] [batch, agent, channel, height, width]
+        local_com_mat_update = super().build_local_communication_matrix(
+            feat_list
+        )  # to avoid the inplace operation
 
         save_agent_weight_list = list()
 
@@ -64,15 +68,21 @@ class DiscoNet(IntermediateModelBase):
                 if super().outage():
                     agent_wise_weight_feat = self.neighbor_feat_list[0]
                 else:
-                    super().build_neighbors_feature_list(b, i, all_warp, num_agent, local_com_mat, device, size)
+                    super().build_neighbors_feature_list(
+                        b, i, all_warp, num_agent, local_com_mat, device, size
+                    )
 
                     # agent-wise weighted fusion
                     tmp_agent_weight_list = list()
                     sum_weight = 0
                     for k in range(num_agent):
-                        cat_feat = torch.cat([tg_agent, self.neighbor_feat_list[k]], dim=0)
+                        cat_feat = torch.cat(
+                            [tg_agent, self.neighbor_feat_list[k]], dim=0
+                        )
                         cat_feat = cat_feat.unsqueeze(0)
-                        agent_weight = torch.squeeze(self.pixel_weighted_fusion(cat_feat))
+                        agent_weight = torch.squeeze(
+                            self.pixel_weighted_fusion(cat_feat)
+                        )
                         tmp_agent_weight_list.append(torch.exp(agent_weight))
                         sum_weight = sum_weight + torch.exp(agent_weight)
 
@@ -84,8 +94,10 @@ class DiscoNet(IntermediateModelBase):
 
                     agent_wise_weight_feat = 0
                     for k in range(num_agent):
-                        agent_wise_weight_feat = agent_wise_weight_feat + agent_weight_list[k] * \
-                                                 self.neighbor_feat_list[k]
+                        agent_wise_weight_feat = (
+                            agent_wise_weight_feat
+                            + agent_weight_list[k] * self.neighbor_feat_list[k]
+                        )
 
                 # feature update
                 local_com_mat_update[b, i] = agent_wise_weight_feat
@@ -95,7 +107,9 @@ class DiscoNet(IntermediateModelBase):
         # weighted feature maps is passed to decoder
         feat_fuse_mat = super().agents_to_batch(local_com_mat_update)
 
-        decoded_layers = super().get_decoded_layers(encoded_layers, feat_fuse_mat, batch_size)
+        decoded_layers = super().get_decoded_layers(
+            encoded_layers, feat_fuse_mat, batch_size
+        )
         x = decoded_layers[0]
 
         cls_preds, loc_preds, result = super().get_cls_loc_result(x)

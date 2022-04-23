@@ -41,8 +41,11 @@ class DiscoNet(FusionBase):
 
                 for j in range(self.num_agent):
                     if j != i:
-                        self.neighbor_feat_list.append(super().feature_transformation(b, j, local_com_mat,
-                                                                                      all_warp, device, size))
+                        self.neighbor_feat_list.append(
+                            super().feature_transformation(
+                                b, j, local_com_mat, all_warp, device, size
+                            )
+                        )
 
                 local_com_mat_update[b, i] = self.fusion()
 
@@ -81,8 +84,10 @@ class DiscoNet(FusionBase):
 
         agent_wise_weight_feat = 0
         for k in range(self.num_agent):
-            agent_wise_weight_feat = agent_wise_weight_feat + agent_weight_list[k] * \
-                                     self.neighbor_feat_list[k]
+            agent_wise_weight_feat = (
+                agent_wise_weight_feat
+                + agent_weight_list[k] * self.neighbor_feat_list[k]
+            )
 
         return agent_wise_weight_feat
 

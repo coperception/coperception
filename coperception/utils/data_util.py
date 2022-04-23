@@ -39,9 +39,14 @@ def point_in_hull_fast(points: np.array, bounding_box: Box):
     corners = bounding_box.corners()
 
     # Test if the points are in the bounding box
-    idx = np.where((corners[0, 7] <= pc[:, 0]) & (pc[:, 0] <= corners[0, 0]) &
-                   (corners[1, 1] <= pc[:, 1]) & (pc[:, 1] <= corners[1, 0]) &
-                   (corners[2, 2] <= pc[:, 2]) & (pc[:, 2] <= corners[2, 0]))[0]
+    idx = np.where(
+        (corners[0, 7] <= pc[:, 0])
+        & (pc[:, 0] <= corners[0, 0])
+        & (corners[1, 1] <= pc[:, 1])
+        & (pc[:, 1] <= corners[1, 0])
+        & (corners[2, 2] <= pc[:, 2])
+        & (pc[:, 2] <= corners[2, 0])
+    )[0]
 
     # recover
     bounding_box.rotate(orientation_backup)
@@ -129,9 +134,14 @@ def voxelize(pts, voxel_size, extents=None, num_T=35, seed: float = None):
         if extents.shape != (3, 2):
             raise ValueError("Extents are the wrong shape {}".format(extents.shape))
 
-        filter_idx = np.where((extents[0, 0] < pts[:, 0]) & (pts[:, 0] < extents[0, 1]) &
-                              (extents[1, 0] < pts[:, 1]) & (pts[:, 1] < extents[1, 1]) &
-                              (extents[2, 0] < pts[:, 2]) & (pts[:, 2] < extents[2, 1]))[0]
+        filter_idx = np.where(
+            (extents[0, 0] < pts[:, 0])
+            & (pts[:, 0] < extents[0, 1])
+            & (extents[1, 0] < pts[:, 1])
+            & (pts[:, 1] < extents[1, 1])
+            & (extents[2, 0] < pts[:, 2])
+            & (pts[:, 2] < extents[2, 1])
+        )[0]
         pts = pts[filter_idx]
 
     # Discretize voxel coordinates to given quantization size
@@ -149,7 +159,8 @@ def voxelize(pts, voxel_size, extents=None, num_T=35, seed: float = None):
 
     # Format the array to c-contiguous array for unique function
     contiguous_array = np.ascontiguousarray(discrete_pts).view(
-        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1])))
+        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1]))
+    )
 
     # The new coordinates are the discretized array with its unique indexes
     _, unique_indices = np.unique(contiguous_array, return_index=True)
@@ -161,7 +172,9 @@ def voxelize(pts, voxel_size, extents=None, num_T=35, seed: float = None):
 
     # Number of points per voxel, last voxel calculated separately
     num_points_in_voxel = np.diff(unique_indices)
-    num_points_in_voxel = np.append(num_points_in_voxel, discrete_pts.shape[0] - unique_indices[-1])
+    num_points_in_voxel = np.append(
+        num_points_in_voxel, discrete_pts.shape[0] - unique_indices[-1]
+    )
 
     # Compute the minimum and maximum voxel coordinates
     if extents is not None:
@@ -178,44 +191,70 @@ def voxelize(pts, voxel_size, extents=None, num_T=35, seed: float = None):
     voxel_indices = (voxel_coords - min_voxel_coord).astype(int)
 
     # Padding the points within each voxel
-    padded_voxel_points = np.zeros([unique_indices.shape[0], num_T, pts.shape[1] + 3], dtype=np.float32)
-    padded_voxel_points = padding_voxel(padded_voxel_points, unique_indices, num_points_in_voxel, points, num_T, seed)
+    padded_voxel_points = np.zeros(
+        [unique_indices.shape[0], num_T, pts.shape[1] + 3], dtype=np.float32
+    )
+    padded_voxel_points = padding_voxel(
+        padded_voxel_points, unique_indices, num_points_in_voxel, points, num_T, seed
+    )
 
     return padded_voxel_points, voxel_indices, num_divisions
 
 
 @njit
-def padding_voxel(padded_voxel_points, unique_indices, num_points_in_voxel, points, num_T, seed):
+def padding_voxel(
+    padded_voxel_points, unique_indices, num_points_in_voxel, points, num_T, seed
+):
     if seed is not None:
         np.random.seed(seed)
     for i, v in enumerate(zip(unique_indices, num_points_in_voxel)):
         if v[1] < num_T:
-            padded_voxel_points[i, :v[1], :4] = points[v[0]:v[0] + v[1], :]
-            middle_points_x = np.mean(points[v[0]:v[0] + v[1], 0])
-            middle_points_y = np.mean(points[v[0]:v[0] + v[1], 1])
-            middle_points_z = np.mean(points[v[0]:v[0] + v[1], 2])
-            padded_voxel_points[i, :v[1], 4] = padded_voxel_points[i, :v[1], 0] - middle_points_x
-            padded_voxel_points[i, :v[1], 5] = padded_voxel_points[i, :v[1], 1] - middle_points_y
-            padded_voxel_points[i, :v[1], 6] = padded_voxel_points[i, :v[1], 2] - middle_points_z
+            padded_voxel_points[i, : v[1], :4] = points[v[0] : v[0] + v[1], :]
+            middle_points_x = np.mean(points[v[0] : v[0] + v[1], 0])
+            middle_points_y = np.mean(points[v[0] : v[0] + v[1], 1])
+            middle_points_z = np.mean(points[v[0] : v[0] + v[1], 2])
+            padded_voxel_points[i, : v[1], 4] = (
+                padded_voxel_points[i, : v[1], 0] - middle_points_x
+            )
+            padded_voxel_points[i, : v[1], 5] = (
+                padded_voxel_points[i, : v[1], 1] - middle_points_y
+            )
+            padded_voxel_points[i, : v[1], 6] = (
+                padded_voxel_points[i, : v[1], 2] - middle_points_z
+            )
         else:
             inds = np.random.choice(v[1], num_T)
             padded_voxel_points[i, :, :4] = points[v[0] + inds, :]
             middle_points_x = np.mean(points[v[0] + inds, 0])
             middle_points_y = np.mean(points[v[0] + inds, 1])
             middle_points_z = np.mean(points[v[0] + inds, 2])
-            padded_voxel_points[i, :, 4] = padded_voxel_points[i, :, 0] - middle_points_x
-            padded_voxel_points[i, :, 5] = padded_voxel_points[i, :, 1] - middle_points_y
-            padded_voxel_points[i, :, 6] = padded_voxel_points[i, :, 2] - middle_points_z
+            padded_voxel_points[i, :, 4] = (
+                padded_voxel_points[i, :, 0] - middle_points_x
+            )
+            padded_voxel_points[i, :, 5] = (
+                padded_voxel_points[i, :, 1] - middle_points_y
+            )
+            padded_voxel_points[i, :, 6] = (
+                padded_voxel_points[i, :, 2] - middle_points_z
+            )
 
     return padded_voxel_points
 
 
-def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = None,
-                   frame_skip: int = 0, reordered: bool = False, proportion_thresh: float = 0.5,
-                   category_num: int = 5, one_hot_thresh: float = 0.8, h_flip: bool = False,
-                   min_point_num_per_voxel: int = -1,
-                   return_past_2d_disp_gt: bool = False,
-                   return_instance_map: bool = False):
+def gen_2d_grid_gt(
+    data_dict: dict,
+    grid_size: np.array,
+    extents: np.array = None,
+    frame_skip: int = 0,
+    reordered: bool = False,
+    proportion_thresh: float = 0.5,
+    category_num: int = 5,
+    one_hot_thresh: float = 0.8,
+    h_flip: bool = False,
+    min_point_num_per_voxel: int = -1,
+    return_past_2d_disp_gt: bool = False,
+    return_instance_map: bool = False,
+):
     """
     Generate the 2d grid ground-truth for the input point cloud.
     The ground-truth is: the displacement vectors of the occupied pixels in BEV image.
@@ -238,28 +277,30 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
     :param return_instance_map: Whether to return the instance id map.
     :return: The ground-truth displacement field. Shape (num_sweeps, image height, image width, 2).
     """
-    num_sweeps = data_dict['num_sweeps']
-    times = data_dict['times']
+    num_sweeps = data_dict["num_sweeps"]
+    times = data_dict["times"]
     num_past_sweeps = len(np.where(times >= 0)[0])
     num_future_sweeps = len(np.where(times < 0)[0])
-    assert num_past_sweeps + num_future_sweeps == num_sweeps, "The number of sweeps is incorrect!"
+    assert (
+        num_past_sweeps + num_future_sweeps == num_sweeps
+    ), "The number of sweeps is incorrect!"
 
     pc_list = []
 
     for i in range(num_sweeps):
-        pc = data_dict['pc_' + str(i)]
+        pc = data_dict["pc_" + str(i)]
         if h_flip:
             pc[0, :] = -pc[0, :]  # flip x coordinate
         pc_list.append(pc.T)
 
     # Retrieve the instance boxes
-    num_instances = data_dict['num_instances']
+    num_instances = data_dict["num_instances"]
     instance_box_list = list()
     instance_cat_list = list()  # for instance categories
 
     for i in range(num_instances):
-        instance = data_dict['instance_boxes_' + str(i)]
-        category = data_dict['category_' + str(i)]
+        instance = data_dict["instance_boxes_" + str(i)]
+        category = data_dict["category_" + str(i)]
         instance_box_list.append(instance)
         instance_cat_list.append(category)
 
@@ -272,9 +313,14 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
         if extents.shape != (3, 2):
             raise ValueError("Extents are the wrong shape {}".format(extents.shape))
 
-        filter_idx = np.where((extents[0, 0] < refer_pc[:, 0]) & (refer_pc[:, 0] < extents[0, 1]) &
-                              (extents[1, 0] < refer_pc[:, 1]) & (refer_pc[:, 1] < extents[1, 1]) &
-                              (extents[2, 0] < refer_pc[:, 2]) & (refer_pc[:, 2] < extents[2, 1]))[0]
+        filter_idx = np.where(
+            (extents[0, 0] < refer_pc[:, 0])
+            & (refer_pc[:, 0] < extents[0, 1])
+            & (extents[1, 0] < refer_pc[:, 1])
+            & (refer_pc[:, 1] < extents[1, 1])
+            & (extents[2, 0] < refer_pc[:, 2])
+            & (refer_pc[:, 2] < extents[2, 1])
+        )[0]
         refer_pc = refer_pc[filter_idx]
 
     # -- Discretize pixel coordinates to given quantization size
@@ -289,7 +335,8 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
     discrete_pts = discrete_pts[sorted_order]
 
     contiguous_array = np.ascontiguousarray(discrete_pts).view(
-        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1])))
+        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1]))
+    )
 
     # -- The new coordinates are the discretized array with its unique indexes
     _, unique_indices = np.unique(contiguous_array, return_index=True)
@@ -300,7 +347,9 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
 
     # -- Number of points per voxel, last voxel calculated separately
     num_points_in_pixel = np.diff(unique_indices)
-    num_points_in_pixel = np.append(num_points_in_pixel, discrete_pts.shape[0] - unique_indices[-1])
+    num_points_in_pixel = np.append(
+        num_points_in_pixel, discrete_pts.shape[0] - unique_indices[-1]
+    )
 
     # -- Compute the minimum and maximum voxel coordinates
     if extents is not None:
@@ -321,17 +370,20 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
     # Get the point cloud subsets, which are inside different instance bounding boxes
     refer_box_list = list()
     refer_pc_idx_per_bbox = list()
-    points_category = np.zeros(refer_pc.shape[0], dtype=np.int)  # store the point categories
+    points_category = np.zeros(
+        refer_pc.shape[0], dtype=np.int
+    )  # store the point categories
 
     pixel_instance_id = np.zeros(pixel_indices.shape[0], dtype=np.uint8)
     points_instance_id = np.zeros(refer_pc.shape[0], dtype=np.int)
-
 
     for i in range(num_instances):
         instance_cat = instance_cat_list[i]
         instance_box = instance_box_list[i]
         instance_box_data = instance_box[0]
-        assert not np.isnan(instance_box_data).any(), "In the keyframe, there should not be NaN box annotation!"
+        assert not np.isnan(
+            instance_box_data
+        ).any(), "In the keyframe, there should not be NaN box annotation!"
 
         if h_flip:
             tmp_quad = instance_box_data[6:].copy()
@@ -341,10 +393,17 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
 
             tmp_center = instance_box_data[0:3].copy()
             tmp_center[0] = -tmp_center[0]
-            tmp_box = Box(center=tmp_center, size=instance_box_data[3:6], orientation=Quaternion(tmp_quad))
+            tmp_box = Box(
+                center=tmp_center,
+                size=instance_box_data[3:6],
+                orientation=Quaternion(tmp_quad),
+            )
         else:
-            tmp_box = Box(center=instance_box_data[:3], size=instance_box_data[3:6],
-                          orientation=Quaternion(instance_box_data[6:]))
+            tmp_box = Box(
+                center=instance_box_data[:3],
+                size=instance_box_data[3:6],
+                orientation=Quaternion(instance_box_data[6:]),
+            )
         idx = point_in_hull_fast(refer_pc[:, 0:3], tmp_box)
         refer_pc_idx_per_bbox.append(idx)
         refer_box_list.append(tmp_box)
@@ -352,23 +411,23 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
         points_category[idx] = instance_cat
         points_instance_id[idx] = i + 1  # object id starts from 1, background has id 0
 
-
     assert np.max(points_instance_id) <= 255, "The instance id exceeds uint8 max."
 
     if len(refer_pc_idx_per_bbox) > 0:
         refer_pc_idx_inside_box = np.concatenate(refer_pc_idx_per_bbox).tolist()
     else:
         refer_pc_idx_inside_box = []
-    refer_pc_idx_outside_box = set(range(refer_pc.shape[0])) - set(refer_pc_idx_inside_box)
+    refer_pc_idx_outside_box = set(range(refer_pc.shape[0])) - set(
+        refer_pc_idx_inside_box
+    )
     refer_pc_idx_outside_box = list(refer_pc_idx_outside_box)
 
     # Compute pixel (cell) categories
     pixel_cat = np.zeros([unique_indices.shape[0], category_num], dtype=np.float32)
     most_freq_info = []
 
-
     for h, v in enumerate(zip(unique_indices, num_points_in_pixel)):
-        pixel_elements_categories = points_category[v[0]:v[0] + v[1]]
+        pixel_elements_categories = points_category[v[0] : v[0] + v[1]]
         elements_freq = np.bincount(pixel_elements_categories, minlength=category_num)
         assert np.sum(elements_freq) == v[1], "The frequency count is incorrect."
 
@@ -377,7 +436,7 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
         most_freq_info.append([most_freq_cat, most_freq])
 
         most_freq_elements_idx = np.where(pixel_elements_categories == most_freq_cat)[0]
-        pixel_elements_instance_ids = points_instance_id[v[0]:v[0] + v[1]]
+        pixel_elements_instance_ids = points_instance_id[v[0] : v[0] + v[1]]
         most_freq_instance_id = pixel_elements_instance_ids[most_freq_elements_idx[0]]
 
         if most_freq >= one_hot_thresh:
@@ -389,8 +448,9 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
         else:
             pixel_cat[h] = elements_freq  # use soft category probability vector.
 
-
-    pixel_cat_map = np.zeros((num_divisions[0], num_divisions[1], category_num), dtype=np.float32)
+    pixel_cat_map = np.zeros(
+        (num_divisions[0], num_divisions[1], category_num), dtype=np.float32
+    )
     pixel_cat_map[pixel_indices[:, 0], pixel_indices[:, 1]] = pixel_cat[:]
 
     pixel_instance_map = np.zeros((num_divisions[0], num_divisions[1]), dtype=np.uint8)
@@ -405,20 +465,28 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
     cell_pts_num = np.zeros((num_divisions[0], num_divisions[1]), dtype=np.float32)
     cell_pts_num[pixel_indices[:, 0], pixel_indices[:, 1]] = num_points_in_pixel[:]
     tmp_pixel_cat_map = np.argmax(pixel_cat_map, axis=2)
-    ignore_mask = np.logical_and(cell_pts_num <= min_point_num_per_voxel, tmp_pixel_cat_map != 0)
+    ignore_mask = np.logical_and(
+        cell_pts_num <= min_point_num_per_voxel, tmp_pixel_cat_map != 0
+    )
     ignore_mask = np.logical_not(ignore_mask)
     ignore_mask = np.expand_dims(ignore_mask, axis=2)
 
     # Compute the displacement vectors w.r.t. the other sweeps
     all_disp_field_gt_list = list()
-    all_valid_pixel_maps_list = list()  # valid pixel map will be used for masking the computation of loss
+    all_valid_pixel_maps_list = (
+        list()
+    )  # valid pixel map will be used for masking the computation of loss
 
     # -- Skip some frames if necessary
     past_part = list(range(0, num_past_sweeps, frame_skip + 1))
     future_part = list(range(num_past_sweeps + frame_skip, num_sweeps, frame_skip + 1))
     if return_past_2d_disp_gt:
-        zero_disp_field = np.zeros((num_divisions[0], num_divisions[1], 2), dtype=np.float32)
-        all_disp_field_gt_list.append(zero_disp_field)  # append once, which corresponds to the current frame
+        zero_disp_field = np.zeros(
+            (num_divisions[0], num_divisions[1], 2), dtype=np.float32
+        )
+        all_disp_field_gt_list.append(
+            zero_disp_field
+        )  # append once, which corresponds to the current frame
         all_valid_pixel_maps_list.append(non_empty_map)
 
         frame_considered = np.asarray(past_part + future_part)
@@ -429,14 +497,18 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
     for i in frame_considered:
         curr_disp_vectors = np.zeros_like(refer_pc, dtype=np.float32)
         curr_disp_vectors.fill(np.nan)
-        curr_disp_vectors[refer_pc_idx_outside_box,] = 0.0
+        curr_disp_vectors[
+            refer_pc_idx_outside_box,
+        ] = 0.0
 
         # First, for each instance, compute the corresponding points displacement.
         for j in range(num_instances):
             instance_box = instance_box_list[j]
             instance_box_data = instance_box[i]  # This is for the i-th sweep
 
-            if np.isnan(instance_box_data).any():  # It is possible that in this sweep there is no annotation
+            if np.isnan(
+                instance_box_data
+            ).any():  # It is possible that in this sweep there is no annotation
                 continue
 
             if h_flip:
@@ -447,17 +519,28 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
 
                 tmp_center = instance_box_data[0:3].copy()
                 tmp_center[0] = -tmp_center[0]
-                tmp_box = Box(center=tmp_center, size=instance_box_data[3:6], orientation=Quaternion(tmp_quad))
+                tmp_box = Box(
+                    center=tmp_center,
+                    size=instance_box_data[3:6],
+                    orientation=Quaternion(tmp_quad),
+                )
             else:
-                tmp_box = Box(center=instance_box_data[:3], size=instance_box_data[3:6],
-                              orientation=Quaternion(instance_box_data[6:]))
+                tmp_box = Box(
+                    center=instance_box_data[:3],
+                    size=instance_box_data[3:6],
+                    orientation=Quaternion(instance_box_data[6:]),
+                )
             pc_in_bbox_idx = refer_pc_idx_per_bbox[j]
-            disp_vectors = calc_displace_vector(refer_pc[pc_in_bbox_idx], refer_box_list[j], tmp_box)
+            disp_vectors = calc_displace_vector(
+                refer_pc[pc_in_bbox_idx], refer_box_list[j], tmp_box
+            )
 
             curr_disp_vectors[pc_in_bbox_idx] = disp_vectors[:]
 
         # Second, compute the mean displacement vector and category for each non-empty pixel
-        disp_field = np.zeros([unique_indices.shape[0], 2], dtype=np.float32)  # we only consider the 2D field
+        disp_field = np.zeros(
+            [unique_indices.shape[0], 2], dtype=np.float32
+        )  # we only consider the 2D field
 
         # We only compute loss for valid pixels where there are corresponding box annotations between two frames
         valid_pixels = np.zeros(unique_indices.shape[0], dtype=np.bool)
@@ -467,15 +550,21 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
             # Only when the number of majority points exceeds predefined proportion, we compute
             # the displacement vector for this pixel. Otherwise, We consider it is background (possibly ground plane)
             # and has zero displacement.
-            pixel_elements_categories = points_category[v[0]:v[0] + v[1]]
+            pixel_elements_categories = points_category[v[0] : v[0] + v[1]]
             most_freq_cat, most_freq = most_freq_info[h]
 
             if most_freq >= proportion_thresh:
-                most_freq_cat_idx = np.where(pixel_elements_categories == most_freq_cat)[0]
-                most_freq_cat_disp_vectors = curr_disp_vectors[v[0]:v[0] + v[1], :3]
-                most_freq_cat_disp_vectors = most_freq_cat_disp_vectors[most_freq_cat_idx]
+                most_freq_cat_idx = np.where(
+                    pixel_elements_categories == most_freq_cat
+                )[0]
+                most_freq_cat_disp_vectors = curr_disp_vectors[v[0] : v[0] + v[1], :3]
+                most_freq_cat_disp_vectors = most_freq_cat_disp_vectors[
+                    most_freq_cat_idx
+                ]
 
-                if np.isnan(most_freq_cat_disp_vectors).any():  # contains invalid disp vectors
+                if np.isnan(
+                    most_freq_cat_disp_vectors
+                ).any():  # contains invalid disp vectors
                     valid_pixels[h] = 0.0
                 else:
                     mean_disp_vector = np.mean(most_freq_cat_disp_vectors, axis=0)
@@ -484,11 +573,15 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
                     valid_pixels[h] = 1.0
 
         # Finally, assemble to a 2D image
-        disp_field_sparse = np.zeros((num_divisions[0], num_divisions[1], 2), dtype=np.float32)
+        disp_field_sparse = np.zeros(
+            (num_divisions[0], num_divisions[1], 2), dtype=np.float32
+        )
         disp_field_sparse[pixel_indices[:, 0], pixel_indices[:, 1]] = disp_field[:]
         disp_field_sparse = disp_field_sparse * ignore_mask
 
-        valid_pixel_map = np.zeros((num_divisions[0], num_divisions[1]), dtype=np.float32)
+        valid_pixel_map = np.zeros(
+            (num_divisions[0], num_divisions[1]), dtype=np.float32
+        )
         valid_pixel_map[pixel_indices[:, 0], pixel_indices[:, 1]] = valid_pixels[:]
 
         all_disp_field_gt_list.append(disp_field_sparse)
@@ -499,13 +592,34 @@ def gen_2d_grid_gt(data_dict: dict, grid_size: np.array, extents: np.array = Non
 
     if reordered and return_past_2d_disp_gt:
         num_past = len(past_part)
-        all_disp_field_gt_list[0:num_past] = all_disp_field_gt_list[(num_past - 1)::-1]
-        all_valid_pixel_maps_list[0:num_past] = all_valid_pixel_maps_list[(num_past - 1)::-1]
+        all_disp_field_gt_list[0:num_past] = all_disp_field_gt_list[
+            (num_past - 1) :: -1
+        ]
+        all_valid_pixel_maps_list[0:num_past] = all_valid_pixel_maps_list[
+            (num_past - 1) :: -1
+        ]
 
     if return_instance_map:
-        return all_disp_field_gt_list, all_valid_pixel_maps_list, non_empty_map, pixel_cat_map, pixel_indices, pixel_instance_map,instance_box_list,instance_cat_list
+        return (
+            all_disp_field_gt_list,
+            all_valid_pixel_maps_list,
+            non_empty_map,
+            pixel_cat_map,
+            pixel_indices,
+            pixel_instance_map,
+            instance_box_list,
+            instance_cat_list,
+        )
     else:
-        return all_disp_field_gt_list, all_valid_pixel_maps_list, non_empty_map, pixel_cat_map, pixel_indices,instance_box_list,instance_cat_list
+        return (
+            all_disp_field_gt_list,
+            all_valid_pixel_maps_list,
+            non_empty_map,
+            pixel_cat_map,
+            pixel_indices,
+            instance_box_list,
+            instance_cat_list,
+        )
 
 
 def voxelize_occupy(pts, voxel_size, extents=None, return_indices=False):
@@ -540,9 +654,14 @@ def voxelize_occupy(pts, voxel_size, extents=None, return_indices=False):
         if extents.shape != (3, 2):
             raise ValueError("Extents are the wrong shape {}".format(extents.shape))
 
-        filter_idx = np.where((extents[0, 0] < pts[:, 0]) & (pts[:, 0] < extents[0, 1]) &
-                              (extents[1, 0] < pts[:, 1]) & (pts[:, 1] < extents[1, 1]) &
-                              (extents[2, 0] < pts[:, 2]) & (pts[:, 2] < extents[2, 1]))[0]
+        filter_idx = np.where(
+            (extents[0, 0] < pts[:, 0])
+            & (pts[:, 0] < extents[0, 1])
+            & (extents[1, 0] < pts[:, 1])
+            & (pts[:, 1] < extents[1, 1])
+            & (extents[2, 0] < pts[:, 2])
+            & (pts[:, 2] < extents[2, 1])
+        )[0]
         pts = pts[filter_idx]
 
     # Discretize voxel coordinates to given quantization size
@@ -559,7 +678,8 @@ def voxelize_occupy(pts, voxel_size, extents=None, return_indices=False):
 
     # Format the array to c-contiguous array for unique function
     contiguous_array = np.ascontiguousarray(discrete_pts).view(
-        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1])))
+        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1]))
+    )
 
     # The new coordinates are the discretized array with its unique indexes
     _, unique_indices = np.unique(contiguous_array, return_index=True)
@@ -587,9 +707,9 @@ def voxelize_occupy(pts, voxel_size, extents=None, return_indices=False):
     leaf_layout = VOXEL_EMPTY * np.ones(num_divisions.astype(int), dtype=np.float32)
 
     # Fill out the leaf layout
-    leaf_layout[voxel_indices[:, 0],
-                voxel_indices[:, 1],
-                voxel_indices[:, 2]] = VOXEL_FILLED
+    leaf_layout[
+        voxel_indices[:, 0], voxel_indices[:, 1], voxel_indices[:, 2]
+    ] = VOXEL_FILLED
 
     if return_indices:
         return leaf_layout, voxel_indices
@@ -624,9 +744,14 @@ def voxelize_pillar_indices(pts, voxel_size, extents=None):
         if extents.shape != (3, 2):
             raise ValueError("Extents are the wrong shape {}".format(extents.shape))
 
-        filter_idx = np.where((extents[0, 0] < pts[:, 0]) & (pts[:, 0] < extents[0, 1]) &
-                              (extents[1, 0] < pts[:, 1]) & (pts[:, 1] < extents[1, 1]) &
-                              (extents[2, 0] < pts[:, 2]) & (pts[:, 2] < extents[2, 1]))[0]
+        filter_idx = np.where(
+            (extents[0, 0] < pts[:, 0])
+            & (pts[:, 0] < extents[0, 1])
+            & (extents[1, 0] < pts[:, 1])
+            & (pts[:, 1] < extents[1, 1])
+            & (extents[2, 0] < pts[:, 2])
+            & (pts[:, 2] < extents[2, 1])
+        )[0]
         pts = pts[filter_idx]
 
     # Discretize voxel coordinates to given quantization size
@@ -643,7 +768,8 @@ def voxelize_pillar_indices(pts, voxel_size, extents=None):
 
     # Format the array to c-contiguous array for unique function
     contiguous_array = np.ascontiguousarray(discrete_pts).view(
-        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1])))
+        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1]))
+    )
 
     # The new coordinates are the discretized array with its unique indexes
     _, unique_indices = np.unique(contiguous_array, return_index=True)
@@ -655,7 +781,9 @@ def voxelize_pillar_indices(pts, voxel_size, extents=None):
 
     # Number of points per voxel, last voxel calculated separately
     num_points_in_pillar = np.diff(unique_indices)
-    num_points_in_pillar = np.append(num_points_in_pillar, discrete_pts.shape[0] - unique_indices[-1])
+    num_points_in_pillar = np.append(
+        num_points_in_pillar, discrete_pts.shape[0] - unique_indices[-1]
+    )
 
     # Compute the minimum and maximum voxel coordinates
     if extents is not None:
@@ -669,8 +797,15 @@ def voxelize_pillar_indices(pts, voxel_size, extents=None):
     return points, voxel_indices, num_points_in_pillar
 
 
-def voxelize_point_pillar(pts, grid_size, extents=None, num_points=100, num_pillars=2500, seed=None,
-                          is_padded_pillar=False):
+def voxelize_point_pillar(
+    pts,
+    grid_size,
+    extents=None,
+    num_points=100,
+    num_pillars=2500,
+    seed=None,
+    is_padded_pillar=False,
+):
     """
     Discretize the input point cloud into pillars.
 
@@ -704,9 +839,14 @@ def voxelize_point_pillar(pts, grid_size, extents=None, num_points=100, num_pill
         if extents.shape != (3, 2):
             raise ValueError("Extents are the wrong shape {}".format(extents.shape))
 
-        filter_idx = np.where((extents[0, 0] < pts[:, 0]) & (pts[:, 0] < extents[0, 1]) &
-                              (extents[1, 0] < pts[:, 1]) & (pts[:, 1] < extents[1, 1]) &
-                              (extents[2, 0] < pts[:, 2]) & (pts[:, 2] < extents[2, 1]))[0]
+        filter_idx = np.where(
+            (extents[0, 0] < pts[:, 0])
+            & (pts[:, 0] < extents[0, 1])
+            & (extents[1, 0] < pts[:, 1])
+            & (pts[:, 1] < extents[1, 1])
+            & (extents[2, 0] < pts[:, 2])
+            & (pts[:, 2] < extents[2, 1])
+        )[0]
         pts = pts[filter_idx]
 
     # Discretize point coordinates to given 2d quantization size
@@ -723,7 +863,8 @@ def voxelize_point_pillar(pts, grid_size, extents=None, num_points=100, num_pill
 
     # Format the array to c-contiguous array for unique function
     contiguous_array = np.ascontiguousarray(discrete_pts).view(
-        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1])))
+        np.dtype((np.void, discrete_pts.dtype.itemsize * discrete_pts.shape[1]))
+    )
 
     # The new coordinates are the discretized array with its unique indexes
     _, unique_indices = np.unique(contiguous_array, return_index=True)
@@ -735,7 +876,9 @@ def voxelize_point_pillar(pts, grid_size, extents=None, num_points=100, num_pill
 
     # Number of points per voxel, last voxel calculated separately
     num_points_in_pillar = np.diff(unique_indices)
-    num_points_in_pillar = np.append(num_points_in_pillar, discrete_pts.shape[0] - unique_indices[-1])
+    num_points_in_pillar = np.append(
+        num_points_in_pillar, discrete_pts.shape[0] - unique_indices[-1]
+    )
 
     # Compute the minimum and maximum voxel coordinates
     if extents is not None:
@@ -755,19 +898,35 @@ def voxelize_point_pillar(pts, grid_size, extents=None, num_points=100, num_pill
     x_offset = grid_size[0] / 2.0 + extents[0, 0]
     y_offset = grid_size[1] / 2.0 + extents[1, 0]
 
-    padded_grid_points = np.zeros([unique_indices.shape[0], num_points, pts.shape[1] + 3 + 2], dtype=np.float32)
-    padded_pillar = np.zeros([num_pillars, num_points, pts.shape[1] + 3 + 2], dtype=np.float32)
-    padded_pixel_indices = np.zeros([num_pillars, pixel_indices.shape[1]], dtype=np.int64)
+    padded_grid_points = np.zeros(
+        [unique_indices.shape[0], num_points, pts.shape[1] + 3 + 2], dtype=np.float32
+    )
+    padded_pillar = np.zeros(
+        [num_pillars, num_points, pts.shape[1] + 3 + 2], dtype=np.float32
+    )
+    padded_pixel_indices = np.zeros(
+        [num_pillars, pixel_indices.shape[1]], dtype=np.int64
+    )
 
-    padded_grid_points = padding_point_pillar(padded_grid_points, unique_indices, num_points, num_points_in_pillar,
-                                              points, pixel_indices, grid_size, x_offset, y_offset, seed)
+    padded_grid_points = padding_point_pillar(
+        padded_grid_points,
+        unique_indices,
+        num_points,
+        num_points_in_pillar,
+        points,
+        pixel_indices,
+        grid_size,
+        x_offset,
+        y_offset,
+        seed,
+    )
 
     if is_padded_pillar:
 
         # Padding or sampling the pillars  TODO: early sampling to avoid unnecessary computation
         if unique_indices.shape[0] < num_pillars:
-            padded_pillar[:unique_indices.shape[0], :, :] = padded_grid_points[:]
-            padded_pixel_indices[:unique_indices.shape[0], :] = pixel_indices[:]
+            padded_pillar[: unique_indices.shape[0], :, :] = padded_grid_points[:]
+            padded_pixel_indices[: unique_indices.shape[0], :] = pixel_indices[:]
         else:
             pillar_inds = np.random.choice(unique_indices.shape[0], num_pillars)
             padded_pillar[:, :, :] = padded_grid_points[pillar_inds, :, :]
@@ -780,25 +939,45 @@ def voxelize_point_pillar(pts, grid_size, extents=None, num_points=100, num_pill
 
 
 @njit
-def padding_point_pillar(padded_grid_points, unique_indices, num_points, num_points_in_pillar,
-                         points, pixel_indices, grid_size, x_offset, y_offset, seed):
+def padding_point_pillar(
+    padded_grid_points,
+    unique_indices,
+    num_points,
+    num_points_in_pillar,
+    points,
+    pixel_indices,
+    grid_size,
+    x_offset,
+    y_offset,
+    seed,
+):
     if seed is not None:
         np.random.seed(seed)
     for i, v in enumerate(zip(unique_indices, num_points_in_pillar)):
         if v[1] < num_points:
-            padded_grid_points[i, :v[1], :4] = points[v[0]:v[0] + v[1], :]
-            middle_points_x = np.mean(points[v[0]:v[0] + v[1], 0])
-            middle_points_y = np.mean(points[v[0]:v[0] + v[1], 1])
-            middle_points_z = np.mean(points[v[0]:v[0] + v[1], 2])
+            padded_grid_points[i, : v[1], :4] = points[v[0] : v[0] + v[1], :]
+            middle_points_x = np.mean(points[v[0] : v[0] + v[1], 0])
+            middle_points_y = np.mean(points[v[0] : v[0] + v[1], 1])
+            middle_points_z = np.mean(points[v[0] : v[0] + v[1], 2])
 
-            padded_grid_points[i, :v[1], 4] = padded_grid_points[i, :v[1], 0] - middle_points_x
-            padded_grid_points[i, :v[1], 5] = padded_grid_points[i, :v[1], 1] - middle_points_y
-            padded_grid_points[i, :v[1], 6] = padded_grid_points[i, :v[1], 2] - middle_points_z
+            padded_grid_points[i, : v[1], 4] = (
+                padded_grid_points[i, : v[1], 0] - middle_points_x
+            )
+            padded_grid_points[i, : v[1], 5] = (
+                padded_grid_points[i, : v[1], 1] - middle_points_y
+            )
+            padded_grid_points[i, : v[1], 6] = (
+                padded_grid_points[i, : v[1], 2] - middle_points_z
+            )
 
             center_offsets = np.zeros((v[1], 2), dtype=np.float32)
-            center_offsets[:, 0] = padded_grid_points[i, :v[1], 0] - (pixel_indices[i, 0] * grid_size[0] + x_offset)
-            center_offsets[:, 1] = padded_grid_points[i, :v[1], 1] - (pixel_indices[i, 1] * grid_size[1] + y_offset)
-            padded_grid_points[i, :v[1], 7:] = center_offsets[:]
+            center_offsets[:, 0] = padded_grid_points[i, : v[1], 0] - (
+                pixel_indices[i, 0] * grid_size[0] + x_offset
+            )
+            center_offsets[:, 1] = padded_grid_points[i, : v[1], 1] - (
+                pixel_indices[i, 1] * grid_size[1] + y_offset
+            )
+            padded_grid_points[i, : v[1], 7:] = center_offsets[:]
         else:
             inds = np.random.choice(v[1], num_points)
             padded_grid_points[i, :, :4] = points[v[0] + inds, :]
@@ -811,16 +990,26 @@ def padding_point_pillar(padded_grid_points, unique_indices, num_points, num_poi
             padded_grid_points[i, :, 6] = padded_grid_points[i, :, 2] - middle_points_z
 
             center_offsets = np.zeros((num_points, 2), dtype=np.float32)
-            center_offsets[:, 0] = padded_grid_points[i, :, 0] - (pixel_indices[i, 0] * grid_size[0] + x_offset)
-            center_offsets[:, 1] = padded_grid_points[i, :, 1] - (pixel_indices[i, 1] * grid_size[1] + y_offset)
+            center_offsets[:, 0] = padded_grid_points[i, :, 0] - (
+                pixel_indices[i, 0] * grid_size[0] + x_offset
+            )
+            center_offsets[:, 1] = padded_grid_points[i, :, 1] - (
+                pixel_indices[i, 1] * grid_size[1] + y_offset
+            )
             padded_grid_points[i, :, 7:] = center_offsets[:]
 
     return padded_grid_points
 
 
-def compute_ratio_cat_and_motion(dataset_root=None, frame_skip=3, voxel_size=(0.4, 0.4, 0.4), split='train',
-                                 area_extents=np.array([[-30., 30.], [-30., 30.], [-2., 2.]]), num_obj_cat=5,
-                                 num_motion_cat=3):
+def compute_ratio_cat_and_motion(
+    dataset_root=None,
+    frame_skip=3,
+    voxel_size=(0.4, 0.4, 0.4),
+    split="train",
+    area_extents=np.array([[-30.0, 30.0], [-30.0, 30.0], [-2.0, 2.0]]),
+    num_obj_cat=5,
+    num_motion_cat=3,
+):
     """
     Compute the ratios between foreground and background (and static and moving) cells. The ratios will be used for
     non-uniform weighting to mitigate the class imbalance during training.
@@ -833,20 +1022,27 @@ def compute_ratio_cat_and_motion(dataset_root=None, frame_skip=3, voxel_size=(0.
     :param num_motion_cat: The number of motion categories. Currently it is 2 (ie, static and moving).
     """
     if dataset_root is None:
-        dataset_root = '/homes/pwu/_drives/cv0/data/homes/pwu/preprocessed_pc'
+        dataset_root = "/homes/pwu/_drives/cv0/data/homes/pwu/preprocessed_pc"
 
-    scene_dirs = [d for d in os.listdir(dataset_root) if os.path.isdir(os.path.join(dataset_root, d))]
+    scene_dirs = [
+        d
+        for d in os.listdir(dataset_root)
+        if os.path.isdir(os.path.join(dataset_root, d))
+    ]
 
-    if split == 'train':
-        scene_dirs = scene_dirs[:len(scene_dirs) // 2]
+    if split == "train":
+        scene_dirs = scene_dirs[: len(scene_dirs) // 2]
     else:
-        scene_dirs = scene_dirs[len(scene_dirs) // 2:]
+        scene_dirs = scene_dirs[len(scene_dirs) // 2 :]
 
     sample_seq_files = []
     for s_dir in scene_dirs:
         sample_dir = os.path.join(dataset_root, s_dir)
-        sample_files = [os.path.join(sample_dir, f) for f in os.listdir(sample_dir)
-                        if os.path.isfile(os.path.join(sample_dir, f))]
+        sample_files = [
+            os.path.join(sample_dir, f)
+            for f in os.listdir(sample_dir)
+            if os.path.isfile(os.path.join(sample_dir, f))
+        ]
 
         sample_seq_files += sample_files
 
@@ -858,9 +1054,18 @@ def compute_ratio_cat_and_motion(dataset_root=None, frame_skip=3, voxel_size=(0.
     for idx in range(num_sample_seqs):
         sample_file = sample_seq_files[idx]
 
-        all_disp_field_gt, all_valid_pixel_maps, non_empty_map, pixel_cat_map_gt \
-            = gen_2d_grid_gt(sample_file, grid_size=voxel_size[0:2], reordered=True,
-                             extents=area_extents, frame_skip=frame_skip)
+        (
+            all_disp_field_gt,
+            all_valid_pixel_maps,
+            non_empty_map,
+            pixel_cat_map_gt,
+        ) = gen_2d_grid_gt(
+            sample_file,
+            grid_size=voxel_size[0:2],
+            reordered=True,
+            extents=area_extents,
+            frame_skip=frame_skip,
+        )
 
         # -- Compute speed level ground truth
         motion_status_gt = compute_speed_level(all_disp_field_gt, frame_skip=frame_skip)
@@ -868,7 +1073,9 @@ def compute_ratio_cat_and_motion(dataset_root=None, frame_skip=3, voxel_size=(0.
         # -- Count the object category number
         max_prob = np.amax(pixel_cat_map_gt, axis=-1)
         filter_mask = max_prob == 1.0
-        pixel_cat_map = np.argmax(pixel_cat_map_gt, axis=-1) + 1  # category starts from 1 (background), etc
+        pixel_cat_map = (
+            np.argmax(pixel_cat_map_gt, axis=-1) + 1
+        )  # category starts from 1 (background), etc
         pixel_cat_map = (pixel_cat_map * non_empty_map * filter_mask).astype(np.int)
 
         for i in range(num_obj_cat):
@@ -877,7 +1084,9 @@ def compute_ratio_cat_and_motion(dataset_root=None, frame_skip=3, voxel_size=(0.
             obj_cat_cnt[i] += curr_cat_num
 
         # -- Count the motion category number
-        motion_cat_map = np.argmax(motion_status_gt, axis=-1) + 1  # category starts from 1 (static), etc
+        motion_cat_map = (
+            np.argmax(motion_status_gt, axis=-1) + 1
+        )  # category starts from 1 (static), etc
         motion_cat_map = (motion_cat_map * non_empty_map * filter_mask).astype(np.int)
 
         for i in range(num_motion_cat):
@@ -913,8 +1122,14 @@ def compute_speed_level(all_disp_field_gt, total_future_sweeps=20, frame_skip=3)
     last_future_sweep_id = selected_future_sweeps[-1]
     distance_intervals = speed_intervals * (last_future_sweep_id / 20.0)
 
-    speed_level = np.zeros((all_disp_field_gt.shape[1], all_disp_field_gt.shape[2],
-                            speed_intervals.shape[0]), dtype=np.float32)
+    speed_level = np.zeros(
+        (
+            all_disp_field_gt.shape[1],
+            all_disp_field_gt.shape[2],
+            speed_intervals.shape[0],
+        ),
+        dtype=np.float32,
+    )
     last_frame_disp_norm = np.linalg.norm(all_disp_field_gt, ord=2, axis=-1)
     last_frame_disp_norm = last_frame_disp_norm[-1, :, :]
 
@@ -929,8 +1144,12 @@ def compute_speed_level(all_disp_field_gt, total_future_sweeps=20, frame_skip=3)
     return speed_level
 
 
-def compute_speed_level_with_static(all_disp_field_gt, total_future_sweeps=20, frame_skip=3):
-    speed_intervals = np.array([[0.0, 0.0], [0, 5.0], [5.0, 20.0], [20.0, np.inf]])  # unit: m/s
+def compute_speed_level_with_static(
+    all_disp_field_gt, total_future_sweeps=20, frame_skip=3
+):
+    speed_intervals = np.array(
+        [[0.0, 0.0], [0, 5.0], [5.0, 20.0], [20.0, np.inf]]
+    )  # unit: m/s
 
     # First, compute the static and moving cell masks
     all_disp_field_gt_norm = np.linalg.norm(all_disp_field_gt, ord=2, axis=-1)
@@ -940,7 +1159,9 @@ def compute_speed_level_with_static(all_disp_field_gt, total_future_sweeps=20, f
     selected_future_sweeps = np.arange(0, total_future_sweeps + 1, frame_skip + 1)
     selected_future_sweeps = selected_future_sweeps[1:]
 
-    future_sweeps_disp_field_gt_norm = all_disp_field_gt_norm[-len(selected_future_sweeps):, ...]
+    future_sweeps_disp_field_gt_norm = all_disp_field_gt_norm[
+        -len(selected_future_sweeps) :, ...
+    ]
     static_cell_mask = future_sweeps_disp_field_gt_norm <= upper_bound
     static_cell_mask = np.all(static_cell_mask, axis=0)  # along the sequence axis
     moving_cell_mask = np.logical_not(static_cell_mask)
@@ -949,15 +1170,23 @@ def compute_speed_level_with_static(all_disp_field_gt, total_future_sweeps=20, f
     last_future_sweep_id = selected_future_sweeps[-1]
     distance_intervals = speed_intervals * (last_future_sweep_id / 20.0)
 
-    speed_level = np.zeros((all_disp_field_gt.shape[1], all_disp_field_gt.shape[2],
-                            speed_intervals.shape[0]), dtype=np.float32)
+    speed_level = np.zeros(
+        (
+            all_disp_field_gt.shape[1],
+            all_disp_field_gt.shape[2],
+            speed_intervals.shape[0],
+        ),
+        dtype=np.float32,
+    )
     last_frame_disp_norm = all_disp_field_gt_norm[-1, :, :]
 
     for s, d in enumerate(distance_intervals):
         if s == 0:
             mask = static_cell_mask
         else:
-            mask = np.logical_and(d[0] <= last_frame_disp_norm, last_frame_disp_norm < d[1])
+            mask = np.logical_and(
+                d[0] <= last_frame_disp_norm, last_frame_disp_norm < d[1]
+            )
             mask = np.logical_and(mask, moving_cell_mask)
 
         one_hot_vector = np.zeros(speed_intervals.shape[0], dtype=np.float32)
@@ -968,7 +1197,9 @@ def compute_speed_level_with_static(all_disp_field_gt, total_future_sweeps=20, f
     return speed_level
 
 
-def classify_speed_level(all_disp_field_gt, total_future_sweeps=20, future_frame_skip=0):
+def classify_speed_level(
+    all_disp_field_gt, total_future_sweeps=20, future_frame_skip=0
+):
     """
     Classify each cell into static (possibly background) or moving.
     """
@@ -979,16 +1210,22 @@ def classify_speed_level(all_disp_field_gt, total_future_sweeps=20, future_frame
     # then they are considered as static. This thresh is set to be the maximum perturbation for 1 second.
     upper_thresh = 0.2
     upper_bound = (future_frame_skip + 1) / 20 * upper_thresh
-    selected_future_sweeps = np.arange(0, total_future_sweeps + 1, future_frame_skip + 1)
+    selected_future_sweeps = np.arange(
+        0, total_future_sweeps + 1, future_frame_skip + 1
+    )
     selected_future_sweeps = selected_future_sweeps[1:]
 
-    future_sweeps_disp_field_gt_norm = all_disp_field_gt_norm[-len(selected_future_sweeps):, ...]
+    future_sweeps_disp_field_gt_norm = all_disp_field_gt_norm[
+        -len(selected_future_sweeps) :, ...
+    ]
     static_cell_mask = future_sweeps_disp_field_gt_norm <= upper_bound
     static_cell_mask = np.all(static_cell_mask, axis=0)  # along the temporal axis
     moving_cell_mask = np.logical_not(static_cell_mask)
 
     # Next, compute corresponding one-hot vectors
-    motion_cat = np.zeros((all_disp_field_gt.shape[1], all_disp_field_gt.shape[2], 2), dtype=np.float32)
+    motion_cat = np.zeros(
+        (all_disp_field_gt.shape[1], all_disp_field_gt.shape[2], 2), dtype=np.float32
+    )
     bg_one_hot_vector = np.zeros(2, dtype=np.float32)
     bg_one_hot_vector[0] = 1.0
     motion_cat[static_cell_mask] = bg_one_hot_vector[:]
@@ -1002,4 +1239,3 @@ def classify_speed_level(all_disp_field_gt, total_future_sweeps=20, future_frame
 
 if __name__ == "__main__":
     compute_ratio_cat_and_motion()
-

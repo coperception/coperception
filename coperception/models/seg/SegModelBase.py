@@ -27,7 +27,7 @@ class SegModelBase(nn.Module):
         feat_map = {}
         feat_list = []
         for i in range(self.num_agent):
-            feat_map[i] = torch.unsqueeze(x4[batch_size * i:batch_size * (i + 1)], 1)
+            feat_map[i] = torch.unsqueeze(x4[batch_size * i : batch_size * (i + 1)], 1)
             feat_list.append(feat_map[i])
 
         return feat_map, feat_list
@@ -40,20 +40,34 @@ class SegModelBase(nn.Module):
         x_trans = (4 * nb_warp[0, 3]) / 128
         y_trans = -(4 * nb_warp[1, 3]) / 128
 
-        theta_rot = torch.tensor(
-            [[nb_warp[0, 0], nb_warp[0, 1], 0.0], [nb_warp[1, 0], nb_warp[1, 1], 0.0]]).type(
-            dtype=torch.float).to(device)
+        theta_rot = (
+            torch.tensor(
+                [
+                    [nb_warp[0, 0], nb_warp[0, 1], 0.0],
+                    [nb_warp[1, 0], nb_warp[1, 1], 0.0],
+                ]
+            )
+            .type(dtype=torch.float)
+            .to(device)
+        )
         theta_rot = torch.unsqueeze(theta_rot, 0)
-        grid_rot = F.affine_grid(theta_rot, size=torch.Size(size))  # get grid for grid sample
+        grid_rot = F.affine_grid(
+            theta_rot, size=torch.Size(size)
+        )  # get grid for grid sample
 
-        theta_trans = torch.tensor([[1.0, 0.0, x_trans], [0.0, 1.0, y_trans]]).type(dtype=torch.float).to(
-            device)
+        theta_trans = (
+            torch.tensor([[1.0, 0.0, x_trans], [0.0, 1.0, y_trans]])
+            .type(dtype=torch.float)
+            .to(device)
+        )
         theta_trans = torch.unsqueeze(theta_trans, 0)
-        grid_trans = F.affine_grid(theta_trans, size=torch.Size(size))  # get grid for grid sample
+        grid_trans = F.affine_grid(
+            theta_trans, size=torch.Size(size)
+        )  # get grid for grid sample
 
         # first rotate the feature map, then translate it
-        warp_feat_rot = F.grid_sample(nb_agent, grid_rot, mode='bilinear')
-        warp_feat_trans = F.grid_sample(warp_feat_rot, grid_trans, mode='bilinear')
+        warp_feat_rot = F.grid_sample(nb_agent, grid_rot, mode="bilinear")
+        warp_feat_trans = F.grid_sample(warp_feat_rot, grid_trans, mode="bilinear")
         return torch.squeeze(warp_feat_trans)
 
     def agents_to_batch(self, feats):
@@ -78,7 +92,7 @@ class DoubleConv(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
@@ -101,10 +115,12 @@ class Up(nn.Module):
     def __init__(self, in_channels, out_channels, bilinear=True):
         super().__init__()
         if bilinear:
-            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+            self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
             self.conv = DoubleConv(in_channels, out_channels, in_channels // 2)
         else:
-            self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
+            self.up = nn.ConvTranspose2d(
+                in_channels, in_channels // 2, kernel_size=2, stride=2
+            )
             self.conv = DoubleConv(in_channels, out_channels)
 
     def forward(self, x1, x2):
@@ -112,7 +128,9 @@ class Up(nn.Module):
         diff_y = x2.size()[2] - x1.size()[2]
         diff_x = x2.size()[3] - x1.size()[3]
 
-        x1 = F.pad(x1, [diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2])
+        x1 = F.pad(
+            x1, [diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2]
+        )
         x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
 

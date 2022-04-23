@@ -59,7 +59,9 @@ class MinNormSolver:
                     dps[(j, j)] = 0.0
                     for k in range(len(vecs[i])):
                         dps[(j, j)] += torch.sum(vecs[j][k] * vecs[j][k]).item()
-                c, d = MinNormSolver._min_norm_element_from2(dps[(i, i)], dps[(i, j)], dps[(j, j)])
+                c, d = MinNormSolver._min_norm_element_from2(
+                    dps[(i, i)], dps[(i, j)], dps[(j, j)]
+                )
                 if d < dmin:
                     dmin = d
                     sol = [(i, j), c, d]
@@ -86,7 +88,7 @@ class MinNormSolver:
         tm1 = -1.0 * cur_val[proj_grad < 0] / proj_grad[proj_grad < 0]
         tm2 = (1.0 - cur_val[proj_grad > 0]) / (proj_grad[proj_grad > 0])
 
-        skippers = np.sum(tm1 < 1e-7) + np.sum(tm2 < 1e-7)
+        # skippers = np.sum(tm1 < 1e-7) + np.sum(tm2 < 1e-7)
         t = 1
         if len(tm1[tm1 > 1e-7]) > 0:
             t = np.min(tm1[tm1 > 1e-7])
@@ -189,18 +191,20 @@ class MinNormSolver:
 
 def gradient_normalizers(grads, losses, normalization_type):
     gn = {}
-    if normalization_type == 'l2':
+    if normalization_type == "l2":
         for t in grads:
             gn[t] = np.sqrt(np.sum([gr.pow(2).sum().item() for gr in grads[t]]))
-    elif normalization_type == 'loss':
+    elif normalization_type == "loss":
         for t in grads:
             gn[t] = losses[t]
-    elif normalization_type == 'loss+':
+    elif normalization_type == "loss+":
         for t in grads:
-            gn[t] = losses[t] * np.sqrt(np.sum([gr.pow(2).sum().item() for gr in grads[t]]))
-    elif normalization_type == 'none':
+            gn[t] = losses[t] * np.sqrt(
+                np.sum([gr.pow(2).sum().item() for gr in grads[t]])
+            )
+    elif normalization_type == "none":
         for t in grads:
             gn[t] = 1.0
     else:
-        print('ERROR: Invalid Normalization Type')
+        print("ERROR: Invalid Normalization Type")
     return gn

@@ -10,7 +10,9 @@ class FusionBase(SegModelBase):
         self.current_num_agent = None
 
     def fusion(self):
-        raise NotImplementedError("Please implement this method for specific fusion strategies")
+        raise NotImplementedError(
+            "Please implement this method for specific fusion strategies"
+        )
 
     def forward(self, x, trans_matrices, num_agent_tensor):
         device = x.device
@@ -42,8 +44,11 @@ class FusionBase(SegModelBase):
 
                 for j in range(self.current_num_agent):
                     if j != i:
-                        self.neighbor_feat_list.append(super().feature_transformation(b, j, local_com_mat,
-                                                                                      all_warp, device, size))
+                        self.neighbor_feat_list.append(
+                            super().feature_transformation(
+                                b, j, local_com_mat, all_warp, device, size
+                            )
+                        )
 
                 local_com_mat_update[b, i] = self.fusion()
 

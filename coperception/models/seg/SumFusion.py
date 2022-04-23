@@ -9,4 +9,3 @@ class SumFusion(FusionBase):
 
     def fusion(self):
         return torch.sum(torch.stack(self.neighbor_feat_list), dim=0)
-

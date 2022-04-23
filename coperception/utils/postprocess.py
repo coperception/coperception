@@ -1,12 +1,13 @@
-'''
+"""
 Non Max Suppression
 IOU, Recall, Precision, Find overlap and Average Precisions
 Source Code is adapted from github.com/matterport/MaskRCNN
-'''
+"""
 
 import numpy as np
 import torch
 from shapely.geometry import Polygon
+
 
 def convert_format(boxes_array):
     """
@@ -14,7 +15,9 @@ def convert_format(boxes_array):
     :return: a shapely.geometry.Polygon object
     """
 
-    polygons = [Polygon([(box[i, 0], box[i, 1]) for i in range(4)]) for box in boxes_array]
+    polygons = [
+        Polygon([(box[i, 0], box[i, 1]) for i in range(4)]) for box in boxes_array
+    ]
     return np.array(polygons)
 
 
@@ -65,6 +68,7 @@ def compute_recall(pred_boxes, gt_boxes, iou):
     recall = len(set(matched_gt_boxes)) / gt_boxes.shape[0]
     return recall, positive_ids
 
+
 def non_max_suppression(boxes, scores, threshold):
     """Performs non-maximum suppression and returns indices of kept boxes.
     scores: 1-D array of box scores.
@@ -76,20 +80,20 @@ def non_max_suppression(boxes, scores, threshold):
         boxes = boxes.astype(np.float32)
 
     polygons = convert_format(boxes)
-    
+
     # Get indicies of boxes sorted by scores (highest first)
-    #ixs = scores.argsort()[::-1][:top]
-    fil_id = np.where(scores>0.7)[0]
+    # ixs = scores.argsort()[::-1][:top]
+    fil_id = np.where(scores > 0.7)[0]
     ixs_sort = scores[fil_id].argsort()[::-1]
-    #print(fil_id)
+    # print(fil_id)
     ixs = []
     for i in range(len(fil_id)):
         ixs.append(fil_id[ixs_sort[i]])
-    
-    #polygons = convert_format(boxes[ixs])
+
+    # polygons = convert_format(boxes[ixs])
 
     pick = []
-    #print('ori: ',len(ixs))
+    # print('ori: ',len(ixs))
     while len(ixs) > 0:
         # Pick top box and add its index to the list
         i = ixs[0]
@@ -99,17 +103,17 @@ def non_max_suppression(boxes, scores, threshold):
         # Identify boxes with IoU over the threshold. This
         # returns indices into ixs[1:], so add 1 to get
         # indices into ixs.
-        
+
         remove_ixs = np.where(iou > threshold)[0] + 1
-        
+
         # Remove indices of the picked and overlapped boxes.
         ixs = np.delete(ixs, remove_ixs)
-        ixs = np.delete(ixs, 0)    
-    
+        ixs = np.delete(ixs, 0)
 
-    print('selected: ',len(pick))
+    print("selected: ", len(pick))
 
     return np.array(pick, dtype=np.int32)
+
 
 def filter_pred(config, pred):
     if len(pred.size()) == 4:
@@ -119,11 +123,11 @@ def filter_pred(config, pred):
             raise ValueError("Tensor dimension is not right")
 
     cls_pred = pred[0, ...]
-    activation = cls_pred > config['cls_threshold']
+    activation = cls_pred > config["cls_threshold"]
     num_boxes = int(activation.sum())
 
     if num_boxes == 0:
-        #print("No bounding box found")
+        # print("No bounding box found")
         return [], []
 
     corners = torch.zeros((num_boxes, 8))
@@ -133,16 +137,22 @@ def filter_pred(config, pred):
     scores = torch.masked_select(cls_pred, activation).cpu().numpy()
 
     # NMS
-    selected_ids = non_max_suppression(corners, scores, config['nms_iou_threshold'])
+    selected_ids = non_max_suppression(corners, scores, config["nms_iou_threshold"])
     corners = corners[selected_ids]
     scores = scores[selected_ids]
 
     return corners, scores
 
 
-def compute_ap_range(gt_box, gt_class_id,
-                     pred_box, pred_class_id, pred_score,
-                     iou_thresholds=None, verbose=1):
+def compute_ap_range(
+    gt_box,
+    gt_class_id,
+    pred_box,
+    pred_class_id,
+    pred_score,
+    iou_thresholds=None,
+    verbose=1,
+):
     """Compute AP over a range or IoU thresholds. Default range is 0.5-0.95."""
     # Default is 0.5 to 0.95 with increments of 0.05
     iou_thresholds = iou_thresholds or np.arange(0.5, 1.0, 0.05)
@@ -150,18 +160,26 @@ def compute_ap_range(gt_box, gt_class_id,
     # Compute AP over range of IoU thresholds
     AP = []
     for iou_threshold in iou_thresholds:
-        ap, precisions, recalls, overlaps = \
-            compute_ap(gt_box, gt_class_id,
-                       pred_box, pred_class_id, pred_score,
-                       iou_threshold=iou_threshold)
+        ap, precisions, recalls, overlaps = compute_ap(
+            gt_box,
+            gt_class_id,
+            pred_box,
+            pred_class_id,
+            pred_score,
+            iou_threshold=iou_threshold,
+        )
         if verbose:
             print("AP @{:.2f}:\t {:.3f}".format(iou_threshold, ap))
         AP.append(ap)
     AP = np.array(AP).mean()
     if verbose:
-        print("AP @{:.2f}-{:.2f}:\t {:.3f}".format(
-            iou_thresholds[0], iou_thresholds[-1], AP))
+        print(
+            "AP @{:.2f}-{:.2f}:\t {:.3f}".format(
+                iou_thresholds[0], iou_thresholds[-1], AP
+            )
+        )
     return AP
+
 
 def compute_ap(pred_match, num_gt, num_pred):
 
@@ -184,15 +202,15 @@ def compute_ap(pred_match, num_gt, num_pred):
 
     # Compute mean AP over recall range
     indices = np.where(recalls[:-1] != recalls[1:])[0] + 1
-    mAP = np.sum((recalls[indices] - recalls[indices - 1]) *
-                 precisions[indices])
+    mAP = np.sum((recalls[indices] - recalls[indices - 1]) * precisions[indices])
     precision = tp / num_pred
     recall = tp / num_gt
     return mAP, precisions, recalls, precision, recall
 
-def compute_matches(gt_boxes,
-                    pred_boxes, pred_scores,
-                    iou_threshold=0.5, score_threshold=0.0):
+
+def compute_matches(
+    gt_boxes, pred_boxes, pred_scores, iou_threshold=0.5, score_threshold=0.0
+):
     """Finds matches between prediction and ground truth instances.
     Returns:
         gt_match: 1-D array. For each GT box it has the index of the matched
@@ -228,12 +246,12 @@ def compute_matches(gt_boxes,
         # 2. Remove low scores
         low_score_idx = np.where(overlaps[i, sorted_ixs] < score_threshold)[0]
         if low_score_idx.size > 0:
-            sorted_ixs = sorted_ixs[:low_score_idx[0]]
+            sorted_ixs = sorted_ixs[: low_score_idx[0]]
         # 3. Find the match
         for j in sorted_ixs:
             # If ground truth box is already matched, go to next one
             if gt_match[j] > 0:
-                continuemap
+                continue
             # If we reach IoU smaller than the threshold, end the loop
             iou = overlaps[i, j]
             if iou < iou_threshold:

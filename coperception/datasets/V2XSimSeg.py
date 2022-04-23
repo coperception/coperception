@@ -10,7 +10,18 @@ from torch.utils.data import Dataset
 
 
 class V2XSimSeg(Dataset):
-    def __init__(self, dataset_roots=None, config=None, split=None, cache_size=1000, val=False, com=False, bound=None, kd_flag=False, no_cross_road=False):
+    def __init__(
+        self,
+        dataset_roots=None,
+        config=None,
+        split=None,
+        cache_size=1000,
+        val=False,
+        com=False,
+        bound=None,
+        kd_flag=False,
+        no_cross_road=False,
+    ):
         """
         This dataloader loads single sequence for a keyframe, and is not designed for computing the
          spatio-temporal consistency losses. It supports train, val and test splits.
@@ -39,23 +50,37 @@ class V2XSimSeg(Dataset):
         self.no_cross_road = no_cross_road
 
         if dataset_roots is None:
-            raise ValueError("The {} dataset root is None. Should specify its value.".format(self.split))
+            raise ValueError(
+                "The {} dataset root is None. Should specify its value.".format(
+                    self.split
+                )
+            )
         self.dataset_roots = dataset_roots
         self.seq_files = []
         self.seq_scenes = []
         for dataset_root in self.dataset_roots:
             # sort directories
-            dir_list = [d.split('_') for d in os.listdir(dataset_root)]
+            dir_list = [d.split("_") for d in os.listdir(dataset_root)]
             dir_list.sort(key=lambda x: (int(x[0]), int(x[1])))
             self.seq_scenes.append(
-                [int(s[0]) for s in dir_list])  # which scene this frame belongs to (required for visualization)
-            dir_list = ['_'.join(x) for x in dir_list]
+                [int(s[0]) for s in dir_list]
+            )  # which scene this frame belongs to (required for visualization)
+            dir_list = ["_".join(x) for x in dir_list]
 
-            seq_dirs = [os.path.join(dataset_root, d) for d in dir_list
-                        if os.path.isdir(os.path.join(dataset_root, d))]
+            seq_dirs = [
+                os.path.join(dataset_root, d)
+                for d in dir_list
+                if os.path.isdir(os.path.join(dataset_root, d))
+            ]
 
-            self.seq_files.append([os.path.join(seq_dir, f) for seq_dir in seq_dirs for f in os.listdir(seq_dir)
-                                   if os.path.isfile(os.path.join(seq_dir, f))])
+            self.seq_files.append(
+                [
+                    os.path.join(seq_dir, f)
+                    for seq_dir in seq_dirs
+                    for f in os.listdir(seq_dir)
+                    if os.path.isfile(os.path.join(seq_dir, f))
+                ]
+            )
 
         self.num_agent = len(self.dataset_roots)
 
@@ -66,7 +91,7 @@ class V2XSimSeg(Dataset):
         self.num_past_pcs = config.num_past_pcs
         manager = Manager()
         self.cache = [manager.dict() for i in range(self.num_agent)]
-        self.cache_size = cache_size if split == 'train' else 0
+        self.cache_size = cache_size if split == "train" else 0
 
         self.transform = Transform(self.split)
 
@@ -90,23 +115,33 @@ class V2XSimSeg(Dataset):
             if gt_data_handle == 0:
                 empty_flag = True
                 if self.com:
-                    return torch.zeros((256, 256, 13)).bool(), torch.zeros((256, 256, 13)).bool(), torch.zeros((256, 256)).int(), torch.zeros((self.num_agent, 4, 4)), 0, 0
+                    return (
+                        torch.zeros((256, 256, 13)).bool(),
+                        torch.zeros((256, 256, 13)).bool(),
+                        torch.zeros((256, 256)).int(),
+                        torch.zeros((self.num_agent, 4, 4)),
+                        0,
+                        0,
+                    )
                 else:
-                    return torch.zeros((256, 256, 13)).bool(), torch.zeros((256, 256, 13)).bool(), torch.zeros(
-                        (256, 256)).int()
+                    return (
+                        torch.zeros((256, 256, 13)).bool(),
+                        torch.zeros((256, 256, 13)).bool(),
+                        torch.zeros((256, 256)).int(),
+                    )
             else:
                 gt_dict = gt_data_handle.item()
                 if len(self.cache[agent_id]) < self.cache_size:
                     self.cache[agent_id][idx] = gt_dict
 
         if not empty_flag:
-            bev_seg = gt_dict['bev_seg'].astype(np.int32)
+            bev_seg = gt_dict["bev_seg"].astype(np.int32)
 
             padded_voxel_points = list()
 
             # if self.bound == 'lowerbound':
             for i in range(self.num_past_pcs):
-                indices = gt_dict['voxel_indices_' + str(i)]
+                indices = gt_dict["voxel_indices_" + str(i)]
                 curr_voxels = np.zeros(self.dims, dtype=bool)
                 curr_voxels[indices[:, 0], indices[:, 1], indices[:, 2]] = 1
 
@@ -118,16 +153,17 @@ class V2XSimSeg(Dataset):
             padded_voxel_points = np.stack(padded_voxel_points, 0)
             padded_voxel_points = np.squeeze(padded_voxel_points, 0)
 
-
             padded_voxel_points_teacher = list()
             # if self.bound == 'upperbound' or self.kd_flag:
             if self.no_cross_road:
-                indices_teacher = gt_dict['voxel_indices_teacher_no_cross_road']
+                indices_teacher = gt_dict["voxel_indices_teacher_no_cross_road"]
             else:
-                indices_teacher = gt_dict['voxel_indices_teacher']
+                indices_teacher = gt_dict["voxel_indices_teacher"]
 
             curr_voxels_teacher = np.zeros(self.dims, dtype=bool)
-            curr_voxels_teacher[indices_teacher[:, 0], indices_teacher[:, 1], indices_teacher[:, 2]] = 1
+            curr_voxels_teacher[
+                indices_teacher[:, 0], indices_teacher[:, 1], indices_teacher[:, 2]
+            ] = 1
             curr_voxels_teacher = np.rot90(curr_voxels_teacher, 3)
             padded_voxel_points_teacher.append(curr_voxels_teacher)
             padded_voxel_points_teacher = np.stack(padded_voxel_points_teacher, 0)
@@ -135,17 +171,27 @@ class V2XSimSeg(Dataset):
 
             if self.com:
                 if self.no_cross_road:
-                    trans_matrices = gt_dict['trans_matrices_no_cross_road']
+                    trans_matrices = gt_dict["trans_matrices_no_cross_road"]
                 else:
-                    trans_matrices = gt_dict['trans_matrices']
+                    trans_matrices = gt_dict["trans_matrices"]
 
-                target_agent_id = gt_dict['target_agent_id']
-                num_sensor = gt_dict['num_sensor']
+                target_agent_id = gt_dict["target_agent_id"]
+                num_sensor = gt_dict["num_sensor"]
 
-
-                return torch.from_numpy(padded_voxel_points), torch.from_numpy(padded_voxel_points_teacher), torch.from_numpy(bev_seg.copy()), torch.from_numpy(trans_matrices.copy()), target_agent_id, num_sensor
+                return (
+                    torch.from_numpy(padded_voxel_points),
+                    torch.from_numpy(padded_voxel_points_teacher),
+                    torch.from_numpy(bev_seg.copy()),
+                    torch.from_numpy(trans_matrices.copy()),
+                    target_agent_id,
+                    num_sensor,
+                )
             else:
-                return torch.from_numpy(padded_voxel_points), torch.from_numpy(padded_voxel_points_teacher), torch.from_numpy(bev_seg.copy())
+                return (
+                    torch.from_numpy(padded_voxel_points),
+                    torch.from_numpy(padded_voxel_points_teacher),
+                    torch.from_numpy(bev_seg.copy()),
+                )
 
     def __getitem__(self, idx):
         res = []
@@ -154,7 +200,7 @@ class V2XSimSeg(Dataset):
         return res
 
 
-class Transform():
+class Transform:
     def __init__(self, split):
         self.totensor = transforms.ToTensor()
         self.resize = transforms.Resize((256, 256))
@@ -164,7 +210,7 @@ class Transform():
         img = self.totensor(img.copy())
         label = self.totensor(label.copy())
 
-        if self.split != 'train':
+        if self.split != "train":
             return img.permute(1, 2, 0).float(), label.squeeze(0).int()
 
         crop = transforms.RandomResizedCrop(256)
@@ -181,7 +227,8 @@ class Transform():
             label = TF.vflip(label)
 
         img = self.resize(img)
-        label = cv2.resize(label.squeeze(0).numpy(), dsize=(256, 256),
-                           interpolation=cv2.INTER_NEAREST)  # Resize provided by pytorch will have some random noise
+        label = cv2.resize(
+            label.squeeze(0).numpy(), dsize=(256, 256), interpolation=cv2.INTER_NEAREST
+        )  # Resize provided by pytorch will have some random noise
         # return img.permute(1, 2, 0).float(), label.squeeze(0).int()
         return img.permute(1, 2, 0).float(), label

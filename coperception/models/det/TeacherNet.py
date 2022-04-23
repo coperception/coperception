@@ -1,8 +1,11 @@
-from coperception.models.det.base.NonIntermediateModelBase import NonIntermediateModelBase
+from coperception.models.det.base.NonIntermediateModelBase import (
+    NonIntermediateModelBase,
+)
 
 
 class TeacherNet(NonIntermediateModelBase):
     """The teacher net for knowledged distillation in DiscoNet."""
+
     def __init__(self, config):
         super(TeacherNet, self).__init__(config)
 

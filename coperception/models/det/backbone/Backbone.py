@@ -2,17 +2,25 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch
 
+
 class Backbone(nn.Module):
-    """The backbone class that contains encode and decode function"""      
+    """The backbone class that contains encode and decode function"""
+
     def __init__(self, height_feat_size, compress_channel_size=32):
         super().__init__()
-        self.conv_pre_1 = nn.Conv2d(height_feat_size, 32, kernel_size=3, stride=1, padding=1)
+        self.conv_pre_1 = nn.Conv2d(
+            height_feat_size, 32, kernel_size=3, stride=1, padding=1
+        )
         self.conv_pre_2 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)
         self.bn_pre_1 = nn.BatchNorm2d(32)
         self.bn_pre_2 = nn.BatchNorm2d(32)
 
-        self.conv3d_1 = Conv3D(64, 64, kernel_size=(1, 1, 1), stride=1, padding=(0, 0, 0))
-        self.conv3d_2 = Conv3D(128, 128, kernel_size=(1, 1, 1), stride=1, padding=(0, 0, 0))
+        self.conv3d_1 = Conv3D(
+            64, 64, kernel_size=(1, 1, 1), stride=1, padding=(0, 0, 0)
+        )
+        self.conv3d_2 = Conv3D(
+            128, 128, kernel_size=(1, 1, 1), stride=1, padding=(0, 0, 0)
+        )
 
         self.conv1_1 = nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)
         self.conv1_2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
@@ -63,10 +71,14 @@ class Backbone(nn.Module):
         self.bn8_2 = nn.BatchNorm2d(32)
 
         # currently only support compress/decompress at layer x_3
-        self.com_compresser = nn.Conv2d(256, compress_channel_size, kernel_size=1, stride=1)
+        self.com_compresser = nn.Conv2d(
+            256, compress_channel_size, kernel_size=1, stride=1
+        )
         self.bn_compress = nn.BatchNorm2d(compress_channel_size)
 
-        self.com_decompresser = nn.Conv2d(compress_channel_size, 256, kernel_size=1, stride=1)
+        self.com_decompresser = nn.Conv2d(
+            compress_channel_size, 256, kernel_size=1, stride=1
+        )
         self.bn_decompress = nn.BatchNorm2d(256)
 
     def encode(self, x, requires_compression=True):
@@ -74,12 +86,12 @@ class Backbone(nn.Module):
 
         Args:
             x (tensor): the input BEV features.
-            requires_compression (bool, optional): If true, pass the feature through a compresser 
+            requires_compression (bool, optional): If true, pass the feature through a compresser
                 and a decompresser after the last layer. Defaults to True.
 
         Returns:
             A list that contains all the encoded layers.
-        """        
+        """
         batch, seq, z, h, w = x.size()
 
         x = x.view(-1, x.size(-3), x.size(-2), x.size(-1))
@@ -92,17 +104,25 @@ class Backbone(nn.Module):
         x_1 = F.relu(self.bn1_1(self.conv1_1(x)))
         x_1 = F.relu(self.bn1_2(self.conv1_2(x_1)))
 
-        x_1 = x_1.view(batch, -1, x_1.size(1), x_1.size(2), x_1.size(3)).contiguous()  # (batch, seq, c, h, w)
+        x_1 = x_1.view(
+            batch, -1, x_1.size(1), x_1.size(2), x_1.size(3)
+        ).contiguous()  # (batch, seq, c, h, w)
         x_1 = self.conv3d_1(x_1)
-        x_1 = x_1.view(-1, x_1.size(2), x_1.size(3), x_1.size(4)).contiguous()  # (batch * seq, c, h, w)
+        x_1 = x_1.view(
+            -1, x_1.size(2), x_1.size(3), x_1.size(4)
+        ).contiguous()  # (batch * seq, c, h, w)
 
         # -- STC block 2
         x_2 = F.relu(self.bn2_1(self.conv2_1(x_1)))
         x_2 = F.relu(self.bn2_2(self.conv2_2(x_2)))
 
-        x_2 = x_2.view(batch, -1, x_2.size(1), x_2.size(2), x_2.size(3)).contiguous()  # (batch, seq, c, h, w)
+        x_2 = x_2.view(
+            batch, -1, x_2.size(1), x_2.size(2), x_2.size(3)
+        ).contiguous()  # (batch, seq, c, h, w)
         x_2 = self.conv3d_2(x_2)
-        x_2 = x_2.view(-1, x_2.size(2), x_2.size(3), x_2.size(4)).contiguous()  # (batch * seq, c, h, w), seq = 1
+        x_2 = x_2.view(
+            -1, x_2.size(2), x_2.size(3), x_2.size(4)
+        ).contiguous()  # (batch * seq, c, h, w), seq = 1
 
         # -- STC block 3
         x_3 = F.relu(self.bn3_1(self.conv3_1(x_2)))
@@ -117,10 +137,19 @@ class Backbone(nn.Module):
             x_3 = F.relu(self.bn_compress(self.com_compresser(x_3)))
             x_3 = F.relu(self.bn_decompress(self.com_decompresser(x_3)))
 
-
         return [x, x_1, x_2, x_3, x_4]
 
-    def decode(self, x, x_1, x_2, x_3, x_4, batch, kd_flag=False, requires_adaptive_max_pool3d=False):
+    def decode(
+        self,
+        x,
+        x_1,
+        x_2,
+        x_3,
+        x_4,
+        batch,
+        kd_flag=False,
+        requires_adaptive_max_pool3d=False,
+    ):
         """Decode the input features.
 
         Args:
@@ -136,36 +165,72 @@ class Backbone(nn.Module):
         Returns:
             if kd_flag is true, return a list of output from layer-8 to layer-5
             else return a list of a single element: the output after passing through the decoder
-        """        
+        """
         # -------------------------------- Decoder Path --------------------------------
-        x_5 = F.relu(self.bn5_1(self.conv5_1(torch.cat((F.interpolate(x_4, scale_factor=(2, 2)), x_3), dim=1))))
+        x_5 = F.relu(
+            self.bn5_1(
+                self.conv5_1(
+                    torch.cat((F.interpolate(x_4, scale_factor=(2, 2)), x_3), dim=1)
+                )
+            )
+        )
         x_5 = F.relu(self.bn5_2(self.conv5_2(x_5)))
 
         x_2 = x_2.view(batch, -1, x_2.size(1), x_2.size(2), x_2.size(3))
         x_2 = x_2.permute(0, 2, 1, 3, 4).contiguous()
-        x_2 = F.adaptive_max_pool3d(x_2, (1, None, None)) if requires_adaptive_max_pool3d else x_2
+        x_2 = (
+            F.adaptive_max_pool3d(x_2, (1, None, None))
+            if requires_adaptive_max_pool3d
+            else x_2
+        )
         x_2 = x_2.permute(0, 2, 1, 3, 4).contiguous()
         x_2 = x_2.view(-1, x_2.size(2), x_2.size(3), x_2.size(4)).contiguous()
 
-        x_6 = F.relu(self.bn6_1(self.conv6_1(torch.cat((F.interpolate(x_5, scale_factor=(2, 2)), x_2), dim=1))))
+        x_6 = F.relu(
+            self.bn6_1(
+                self.conv6_1(
+                    torch.cat((F.interpolate(x_5, scale_factor=(2, 2)), x_2), dim=1)
+                )
+            )
+        )
         x_6 = F.relu(self.bn6_2(self.conv6_2(x_6)))
 
         x_1 = x_1.view(batch, -1, x_1.size(1), x_1.size(2), x_1.size(3))
         x_1 = x_1.permute(0, 2, 1, 3, 4).contiguous()
-        x_1 = F.adaptive_max_pool3d(x_1, (1, None, None)) if requires_adaptive_max_pool3d else x_1
+        x_1 = (
+            F.adaptive_max_pool3d(x_1, (1, None, None))
+            if requires_adaptive_max_pool3d
+            else x_1
+        )
         x_1 = x_1.permute(0, 2, 1, 3, 4).contiguous()
         x_1 = x_1.view(-1, x_1.size(2), x_1.size(3), x_1.size(4)).contiguous()
 
-        x_7 = F.relu(self.bn7_1(self.conv7_1(torch.cat((F.interpolate(x_6, scale_factor=(2, 2)), x_1), dim=1))))
+        x_7 = F.relu(
+            self.bn7_1(
+                self.conv7_1(
+                    torch.cat((F.interpolate(x_6, scale_factor=(2, 2)), x_1), dim=1)
+                )
+            )
+        )
         x_7 = F.relu(self.bn7_2(self.conv7_2(x_7)))
 
         x = x.view(batch, -1, x.size(1), x.size(2), x.size(3))
         x = x.permute(0, 2, 1, 3, 4).contiguous()
-        x = F.adaptive_max_pool3d(x, (1, None, None)) if requires_adaptive_max_pool3d else x
+        x = (
+            F.adaptive_max_pool3d(x, (1, None, None))
+            if requires_adaptive_max_pool3d
+            else x
+        )
         x = x.permute(0, 2, 1, 3, 4).contiguous()
         x = x.view(-1, x.size(2), x.size(3), x.size(4)).contiguous()
 
-        x_8 = F.relu(self.bn8_1(self.conv8_1(torch.cat((F.interpolate(x_7, scale_factor=(2, 2)), x), dim=1))))
+        x_8 = F.relu(
+            self.bn8_1(
+                self.conv8_1(
+                    torch.cat((F.interpolate(x_7, scale_factor=(2, 2)), x), dim=1)
+                )
+            )
+        )
         res_x = F.relu(self.bn8_2(self.conv8_2(x_8)))
 
         if kd_flag:
@@ -175,19 +240,23 @@ class Backbone(nn.Module):
 
 
 class STPN_KD(Backbone):
-    """Used by non-intermediate models. Pass the output from encoder directly to decoder."""    
+    """Used by non-intermediate models. Pass the output from encoder directly to decoder."""
+
     def __init__(self, height_feat_size=13):
         super().__init__(height_feat_size)
 
     def forward(self, x):
         batch, seq, z, h, w = x.size()
         encoded_layers = super().encode(x, requires_compression=False)
-        decoded_layers = super().decode(*encoded_layers, batch, kd_flag=True, requires_adaptive_max_pool3d=True)
+        decoded_layers = super().decode(
+            *encoded_layers, batch, kd_flag=True, requires_adaptive_max_pool3d=True
+        )
         return (*decoded_layers, encoded_layers[3], encoded_layers[4])
 
 
 class LidarEncoder(Backbone):
-    """The encoder class. Encodes input features in forward pass."""    
+    """The encoder class. Encodes input features in forward pass."""
+
     def __init__(self, height_feat_size=13):
         super().__init__(height_feat_size)
 
@@ -196,7 +265,8 @@ class LidarEncoder(Backbone):
 
 
 class LidarDecoder(Backbone):
-    """The decoder class. Decodes input features in forward pass."""    
+    """The decoder class. Decodes input features in forward pass."""
+
     def __init__(self, height_feat_size=13):
         super().__init__(height_feat_size)
 
@@ -205,10 +275,17 @@ class LidarDecoder(Backbone):
 
 
 class Conv3D(nn.Module):
-    """3D cnn used in the encoder."""    
+    """3D cnn used in the encoder."""
+
     def __init__(self, in_channel, out_channel, kernel_size, stride, padding):
         super(Conv3D, self).__init__()
-        self.conv3d = nn.Conv3d(in_channel, out_channel, kernel_size=kernel_size, stride=stride, padding=padding)
+        self.conv3d = nn.Conv3d(
+            in_channel,
+            out_channel,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+        )
         self.bn3d = nn.BatchNorm3d(out_channel)
 
     def forward(self, x):
@@ -220,23 +297,23 @@ class Conv3D(nn.Module):
         return x
 
 
-'''''''''''''''''''''
+"""""" """""" """""" """
 Added by Yiming
 
-'''''''''''''''''''''
+""" """""" """""" """"""
 
 
 class Conv2DBatchNormRelu(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            n_filters,
-            k_size,
-            stride,
-            padding,
-            bias=True,
-            dilation=1,
-            is_batchnorm=True,
+        self,
+        in_channels,
+        n_filters,
+        k_size,
+        stride,
+        padding,
+        bias=True,
+        dilation=1,
+        is_batchnorm=True,
     ):
         super(Conv2DBatchNormRelu, self).__init__()
 
@@ -297,7 +374,9 @@ class Sparsemax(nn.Module):
         # (NOTE: Can be replaced with linear time selection method described here:
         # http://stanford.edu/~jduchi/projects/DuchiShSiCh08.html)
         zs = torch.sort(input=input, dim=dim, descending=True)[0]
-        range = torch.range(start=1, end=number_of_logits, device=input.device).view(1, -1)
+        range = torch.range(start=1, end=number_of_logits, device=input.device).view(
+            1, -1
+        )
         range = range.expand_as(zs)
 
         # Determine sparsity of projection

@@ -9,13 +9,15 @@ class V2VNet(SegModelBase):
         super().__init__(n_channels, n_classes, num_agent=num_agent)
         self.layer_channel = 512
         self.gnn_iter_num = 1
-        self.convgru = convrnn.Conv2dGRU(in_channels=self.layer_channel * 2,
-                                         out_channels=self.layer_channel,
-                                         kernel_size=3,
-                                         num_layers=1,
-                                         bidirectional=False,
-                                         dilation=1,
-                                         stride=1)
+        self.convgru = convrnn.Conv2dGRU(
+            in_channels=self.layer_channel * 2,
+            out_channels=self.layer_channel,
+            kernel_size=3,
+            num_layers=1,
+            bidirectional=False,
+            dilation=1,
+            stride=1,
+        )
 
     def forward(self, x, trans_matrices, num_agent_tensor):
         device = x.device
@@ -50,8 +52,11 @@ class V2VNet(SegModelBase):
 
                     for j in range(num_agent):
                         if j != i:
-                            neighbor_feat_list.append(super().feature_transformation(b, j, local_com_mat,
-                                                                                     all_warp, device, size))
+                            neighbor_feat_list.append(
+                                super().feature_transformation(
+                                    b, j, local_com_mat, all_warp, device, size
+                                )
+                            )
 
                     mean_feat = torch.mean(torch.stack(neighbor_feat_list), dim=0)
                     cat_feat = torch.cat([agent_feat_list[i], mean_feat], dim=0)

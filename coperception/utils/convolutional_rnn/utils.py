@@ -10,6 +10,7 @@ def _ntuple(n):
         if isinstance(x, collections.Iterable):
             return x
         return tuple(repeat(x, n))
+
     return parse
 
 

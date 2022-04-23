@@ -8,9 +8,21 @@ from coperception.models.seg.SegModelBase import Down, DoubleConv
 
 
 class When2Com_UNet(SegModelBase):
-    def __init__(self, config, n_classes=21, in_channels=13,
-                 has_query=True, sparse=False, layer=3, warp_flag=1, image_size=512,
-                 shared_img_encoder='unified', key_size=1024, query_size=32, num_agent=5):
+    def __init__(
+        self,
+        config,
+        n_classes=21,
+        in_channels=13,
+        has_query=True,
+        sparse=False,
+        layer=3,
+        warp_flag=1,
+        image_size=512,
+        shared_img_encoder="unified",
+        key_size=1024,
+        query_size=32,
+        num_agent=5,
+    ):
         super().__init__(in_channels, n_classes, num_agent=num_agent)
         self.motion_state = config.motion_state
         if config.only_det:
@@ -33,12 +45,18 @@ class When2Com_UNet(SegModelBase):
         self.warp_flag = warp_flag
         self.layer = layer
 
-        self.key_net = KmGenerator(out_size=self.key_size, input_feat_sz=image_size / 32)
-        self.attention_net = MIMOGeneralDotProductAttention(self.query_size, self.key_size, self.warp_flag)
+        self.key_net = KmGenerator(
+            out_size=self.key_size, input_feat_sz=image_size / 32
+        )
+        self.attention_net = MIMOGeneralDotProductAttention(
+            self.query_size, self.key_size, self.warp_flag
+        )
         # # Message generator
         self.query_key_net = PolicyNet4(in_channels=in_channels)
         if self.has_query:
-            self.query_net = KmGenerator(out_size=self.query_size, input_feat_sz=image_size / 32)
+            self.query_net = KmGenerator(
+                out_size=self.query_size, input_feat_sz=image_size / 32
+            )
 
         # Detection decoder
         # self.decoder = lidar_decoder(height_feat_size=in_channels)
@@ -48,10 +66,15 @@ class When2Com_UNet(SegModelBase):
         # if self.shared_img_encoder == 'unified':
         #    self.img_net_paras = list(self.u_encoder.parameters()) + list(self.decoder.parameters())
 
-        self.policy_net_paras = list(self.query_key_net.parameters()) + list(
-            self.key_net.parameters()) + self.attention_paras
+        self.policy_net_paras = (
+            list(self.query_key_net.parameters())
+            + list(self.key_net.parameters())
+            + self.attention_paras
+        )
         if self.has_query:
-            self.policy_net_paras = self.policy_net_paras + list(self.query_net.parameters())
+            self.policy_net_paras = self.policy_net_paras + list(
+                self.query_net.parameters()
+            )
 
         # self.all_paras = self.img_net_paras + self.policy_net_paras
 
@@ -62,7 +85,9 @@ class When2Com_UNet(SegModelBase):
         # v(batch, query_num, channel, size, size)
         cls_num = prob_action.shape[1]
 
-        coef_argmax = F.one_hot(prob_action.max(dim=1)[1], num_classes=cls_num).type(torch.cuda.FloatTensor)
+        coef_argmax = F.one_hot(prob_action.max(dim=1)[1], num_classes=cls_num).type(
+            torch.cuda.FloatTensor
+        )
         coef_argmax = coef_argmax.transpose(1, 2)
         attn_shape = coef_argmax.shape
         bats, key_num, query_num = attn_shape[0], attn_shape[1], attn_shape[2]
@@ -81,7 +106,9 @@ class When2Com_UNet(SegModelBase):
         count_coef = copy.deepcopy(coef_argmax)
         ind = np.diag_indices(self.num_agent)
         count_coef[:, ind[0], ind[1]] = 0
-        num_connect = torch.nonzero(count_coef).shape[0] / (self.num_agent * count_coef.shape[0])
+        num_connect = torch.nonzero(count_coef).shape[0] / (
+            self.num_agent * count_coef.shape[0]
+        )
 
         return feat_argmax, coef_argmax, num_connect
 
@@ -105,11 +132,23 @@ class When2Com_UNet(SegModelBase):
         count_coef = coef_act.clone()
         ind = np.diag_indices(self.num_agent)
         count_coef[:, ind[0], ind[1]] = 0
-        num_connect = torch.nonzero(count_coef).shape[0] / (self.num_agent * count_coef.shape[0])
+        num_connect = torch.nonzero(count_coef).shape[0] / (
+            self.num_agent * count_coef.shape[0]
+        )
         return feat_act, coef_act, num_connect
 
-    def forward(self, bevs, trans_matrices, num_agent_tensor, maps=None, vis=None, training=True, MO_flag=True,
-                inference='activated', batch_size=1):
+    def forward(
+        self,
+        bevs,
+        trans_matrices,
+        num_agent_tensor,
+        maps=None,
+        vis=None,
+        training=True,
+        MO_flag=True,
+        inference="activated",
+        batch_size=1,
+    ):
         device = bevs.device
         x1 = self.inc(bevs)
         x2 = self.down1(x1)
@@ -117,17 +156,21 @@ class When2Com_UNet(SegModelBase):
         x4 = self.down3(x3)  # b 512 32 32
         size = (1, 512, 32, 32)
         batch_size = bevs.size(0) // self.num_agent
-        val_mat = torch.zeros(batch_size, self.num_agent, self.num_agent, 512, 32, 32).to(device)
+        val_mat = torch.zeros(
+            batch_size, self.num_agent, self.num_agent, 512, 32, 32
+        ).to(device)
 
         # get feat maps for each agent
         feat_map, feat_list = super().build_feat_map_and_feat_list(x4, batch_size)
 
-        '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+        """""" """""" """""" """""" """""" """""" """""" """""" """""" """
          generate value matrix for each agent, Yiming, 2021.4.22
 
-        '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+        """ """""" """""" """""" """""" """""" """""" """""" """""" """"""
         if self.warp_flag == 1:
-            local_com_mat = torch.cat(tuple(feat_list), 1)  # [2 5 512 16 16] [batch, agent, channel, height, width]
+            local_com_mat = torch.cat(
+                tuple(feat_list), 1
+            )  # [2 5 512 16 16] [batch, agent, channel, height, width]
             for b in range(batch_size):
                 # num_agent = num_agent_tensor[b, 0]
                 num_agent = self.num_agent
@@ -138,8 +181,9 @@ class When2Com_UNet(SegModelBase):
                         if j == i:
                             val_mat[b, i, j] = tg_agent
                         else:
-                            val_mat[b, i, j] = super().feature_transformation(b, j, local_com_mat,
-                                                                              all_warp, device, size)
+                            val_mat[b, i, j] = super().feature_transformation(
+                                b, j, local_com_mat, all_warp, device, size
+                            )
         else:
             val_mat = torch.cat(tuple(feat_list), 1)
 
@@ -156,12 +200,14 @@ class When2Com_UNet(SegModelBase):
         query_list = []
 
         for i in range(self.num_agent):
-            key[i] = torch.unsqueeze(keys[batch_size * i:batch_size * (i + 1)], 1)
+            key[i] = torch.unsqueeze(keys[batch_size * i : batch_size * (i + 1)], 1)
             key_list.append(key[i])
             if self.has_query:
-                query[i] = torch.unsqueeze(querys[batch_size * i:batch_size * (i + 1)], 1)
+                query[i] = torch.unsqueeze(
+                    querys[batch_size * i : batch_size * (i + 1)], 1
+                )
             else:
-                query[i] = torch.ones(batch_size, 1, self.query_size).to('cuda')
+                query[i] = torch.ones(batch_size, 1, self.query_size).to("cuda")
             query_list.append(query[i])
 
         key_mat = torch.cat(tuple(key_list), 1)
@@ -171,7 +217,9 @@ class When2Com_UNet(SegModelBase):
         else:
             query_mat = torch.unsqueeze(query_mat[:, 0, :], 1)
 
-        feat_fuse, prob_action = self.attention_net(query_mat, key_mat, val_mat, sparse=self.sparse)
+        feat_fuse, prob_action = self.attention_net(
+            query_mat, key_mat, val_mat, sparse=self.sparse
+        )
         # print(query_mat.shape, key_mat.shape, val_mat.shape, feat_fuse.shape)
         # weighted feature maps is passed to decoder
         feat_fuse_mat = self.agents_to_batch(feat_fuse)
@@ -183,26 +231,30 @@ class When2Com_UNet(SegModelBase):
         prob_action = prob_action + small_bis
 
         if training:
-            action = torch.argmax(prob_action, dim=1)
-            num_connect = self.num_agent - 1
+            # action = torch.argmax(prob_action, dim=1)
+            # num_connect = self.num_agent - 1
             x5 = self.down4(feat_fuse_mat)
             x = self.up1(x5, feat_fuse_mat)
             x = self.up2(x, x3)
             x = self.up3(x, x2)
             x = self.up4(x, x1)
         else:
-            if inference == 'softmax':
-                action = torch.argmax(prob_action, dim=1)
-                num_connect = self.num_agent - 1
+            if inference == "softmax":
+                # action = torch.argmax(prob_action, dim=1)
+                # num_connect = self.num_agent - 1
                 x5 = self.down4(feat_fuse_mat)
                 x = self.up1(x5, feat_fuse_mat)
                 x = self.up2(x, x3)
                 x = self.up3(x, x2)
                 x = self.up4(x, x1)
-            elif inference == 'argmax_test':
+            elif inference == "argmax_test":
                 # print('argmax_test')
-                feat_argmax, connect_mat, num_connect = self.argmax_select(self.warp_flag, val_mat, prob_action)
-                feat_argmax_mat = self.agents_to_batch(feat_argmax)  # (batchsize*agent_num, channel, size, size)
+                feat_argmax, connect_mat, num_connect = self.argmax_select(
+                    self.warp_flag, val_mat, prob_action
+                )
+                feat_argmax_mat = self.agents_to_batch(
+                    feat_argmax
+                )  # (batchsize*agent_num, channel, size, size)
                 feat_argmax_mat = feat_argmax_mat.detach()
                 # pred_argmax = self.decoder(x, x_1, x_2, feat_argmax_mat, x_4, batch_size)
 
@@ -214,10 +266,14 @@ class When2Com_UNet(SegModelBase):
                 # action = torch.argmax(connect_mat, dim=1)
                 # return pred_argmax, prob_action, action, num_connect
                 # x=pred_argmax
-            elif inference == 'activated':
+            elif inference == "activated":
                 # print('activated')
-                feat_act, connect_mat, num_connect = self.activated_select(self.warp_flag, val_mat, prob_action)
-                feat_act_mat = self.agents_to_batch(feat_act)  # (batchsize*agent_num, channel, size, size)
+                feat_act, connect_mat, num_connect = self.activated_select(
+                    self.warp_flag, val_mat, prob_action
+                )
+                feat_act_mat = self.agents_to_batch(
+                    feat_act
+                )  # (batchsize*agent_num, channel, size, size)
                 feat_act_mat = feat_act_mat.detach()
                 # if self.layer ==4:
                 #    pred_act = self.decoder(x, x_1, x_2, x_3, feat_act_mat,batch_size)
@@ -231,7 +287,7 @@ class When2Com_UNet(SegModelBase):
                 x = self.up3(x, x2)
                 x = self.up4(x, x1)
             else:
-                raise ValueError('Incorrect inference mode')
+                raise ValueError("Incorrect inference mode")
         logits = self.outc(x)
         return logits
 
@@ -270,15 +326,15 @@ class PolicyNet4(nn.Module):
 
 class conv2DBatchNormRelu(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            n_filters,
-            k_size,
-            stride,
-            padding,
-            bias=True,
-            dilation=1,
-            is_batchnorm=True,
+        self,
+        in_channels,
+        n_filters,
+        k_size,
+        stride,
+        padding,
+        bias=True,
+        dilation=1,
+        is_batchnorm=True,
     ):
         super(conv2DBatchNormRelu, self).__init__()
 
@@ -314,7 +370,8 @@ class KmGenerator(nn.Module):
             nn.ReLU(inplace=True),
             nn.Linear(256, 128),
             nn.ReLU(inplace=True),
-            nn.Linear(128, out_size))
+            nn.Linear(128, out_size),
+        )
 
     def forward(self, features_map):
         outputs = self.fc(features_map.view(-1, self.n_feat))
@@ -323,7 +380,7 @@ class KmGenerator(nn.Module):
 
 # MIMO (non warp)
 class MIMOGeneralDotProductAttention(nn.Module):
-    ''' Scaled Dot-Product Attention '''
+    """Scaled Dot-Product Attention"""
 
     def __init__(self, query_size, key_size, warp_flag, attn_dropout=0.1):
         super().__init__()
@@ -331,7 +388,7 @@ class MIMOGeneralDotProductAttention(nn.Module):
         self.softmax = nn.Softmax(dim=1)
         self.linear = nn.Linear(query_size, key_size)
         self.warp_flag = warp_flag
-        print('Msg size: ', query_size, '  Key size: ', key_size)
+        print("Msg size: ", query_size, "  Key size: ", key_size)
 
     def forward(self, qu, k, v, sparse=True):
         # qu (batch,5,32)
@@ -346,7 +403,9 @@ class MIMOGeneralDotProductAttention(nn.Module):
         # k_norm = k.norm(p=2,dim=2).unsqueeze(2).expand_as(k)
         # k = k.div(k_norm + 1e-9)
         # generate the
-        attn_orig = torch.bmm(k, query.transpose(2, 1))  # (batch,5,5)  column: differnt keys and the same query
+        attn_orig = torch.bmm(
+            k, query.transpose(2, 1)
+        )  # (batch,5,5)  column: differnt keys and the same query
 
         # scaling [not sure]
         # scaling = torch.sqrt(torch.tensor(k.shape[2],dtype=torch.float32)).cuda()
@@ -356,7 +415,9 @@ class MIMOGeneralDotProductAttention(nn.Module):
 
         attn_shape = attn_orig_softmax.shape
         bats, key_num, query_num = attn_shape[0], attn_shape[1], attn_shape[2]
-        attn_orig_softmax_exp = attn_orig_softmax.view(bats, key_num, query_num, 1, 1, 1)
+        attn_orig_softmax_exp = attn_orig_softmax.view(
+            bats, key_num, query_num, 1, 1, 1
+        )
 
         if self.warp_flag == 1:
             v_exp = v
@@ -405,7 +466,9 @@ class Sparsemax(nn.Module):
         # (NOTE: Can be replaced with linear time selection method described here:
         # http://stanford.edu/~jduchi/projects/DuchiShSiCh08.html)
         zs = torch.sort(input=input, dim=dim, descending=True)[0]
-        range = torch.range(start=1, end=number_of_logits, device=input.device).view(1, -1)
+        range = torch.range(start=1, end=number_of_logits, device=input.device).view(
+            1, -1
+        )
         range = range.expand_as(zs)
 
         # Determine sparsity of projection
