@@ -31,7 +31,6 @@ setup(
         "torch",
         "opencv-python",
         "torchvision",
-        "functools",
         "typing",
         "nuscenes-devkit",
         "pyquaternion",
