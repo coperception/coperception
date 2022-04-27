@@ -1,4 +1,4 @@
-# Models
+# Collaborative Models
 
 For the following tutorial, suppose that we are using `Config`, `criterion`, and randomly generated data as follows:  
 
@@ -51,56 +51,6 @@ data = {
 config = Config('train', binary=True, only_det=True)
 criterion = {'cls': SoftmaxFocalClassificationLoss(), 'loc': WeightedSmoothL1LocalizationLoss()}
 ```
-<br> 
-
-## FaFNet
-::: coperception.models.det.FaFNet.FaFNet
-    selection:
-      members: none
-
-![FaFNet](./assets/images/fafnet.png)
-
-### Detection
-**Initialization**
-```python
-model = FaFNet(
-        config, 
-        layer=collaboration_layer, 
-        kd_flag=False, 
-        num_agent=num_agent
-)
-
-config.flag = 'lowerbound' # [lowerbound / upperbound]
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-faf_module = FaFModule(
-        model=model,
-        teacher=None,
-        config=config, 
-        optimizer=optimizer,
-        criterion=criterion, 
-        kd_flag=False
-)
-```
-
-**Training**
-```python
-loss, cls_loss, loc_loss = faf_module.step(data, batch_size, num_agent=num_agent)
-```
-
-**Testing**
-```python
-faf_module.model.eval()
-
-checkpoint = torch.load('/path/to/checkpoint/file.pth')
-faf_module.model.load_state_dict(checkpoint['model_state_dict'])
-faf_module.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-faf_module.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-
-loss, cls_loss, loc_loss, result = faf_module.predict_all(data, batch_size=1, num_agent=num_agent)
-```
-
-
 <br> 
 
 ## DiscoNet
