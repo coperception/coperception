@@ -1,4 +1,4 @@
-from coperception.models.det.base.IntermediateModelBase import IntermediateModelBase
+from coperception.models.det.base import IntermediateModelBase
 
 
 class FusionBase(IntermediateModelBase):

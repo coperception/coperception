@@ -1,5 +1,5 @@
 from coperception.models.det.backbone.Backbone import *
-from coperception.models.det.base.DetModelBase import DetModelBase
+from coperception.models.det.base import DetModelBase
 
 
 class IntermediateModelBase(DetModelBase):

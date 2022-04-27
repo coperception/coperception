@@ -1,6 +1,6 @@
 import torch
 import coperception.utils.convolutional_rnn as convrnn
-from coperception.models.det.base.IntermediateModelBase import IntermediateModelBase
+from coperception.models.det.base import IntermediateModelBase
 import torch.nn.functional as F
 
 

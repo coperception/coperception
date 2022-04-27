@@ -1,5 +1,5 @@
 import torch
-from coperception.models.det.base.FusionBase import FusionBase
+from coperception.models.det.base import FusionBase
 
 
 class MaxFusion(FusionBase):

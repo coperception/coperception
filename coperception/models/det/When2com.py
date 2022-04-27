@@ -9,7 +9,7 @@ from coperception.models.det.backbone.Backbone import (
     Conv2DBatchNormRelu,
     Sparsemax,
 )
-from coperception.models.det.base.IntermediateModelBase import IntermediateModelBase
+from coperception.models.det.base import IntermediateModelBase
 
 
 class When2com(IntermediateModelBase):

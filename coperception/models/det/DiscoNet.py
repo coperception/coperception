@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from coperception.models.det.base.IntermediateModelBase import IntermediateModelBase
+from coperception.models.det.base import IntermediateModelBase
 
 
 class DiscoNet(IntermediateModelBase):

@@ -1,6 +1,4 @@
-from coperception.models.det.base.NonIntermediateModelBase import (
-    NonIntermediateModelBase,
-)
+from coperception.models.det.base import NonIntermediateModelBase
 
 
 class FaFNet(NonIntermediateModelBase):
