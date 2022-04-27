@@ -1,9 +1,20 @@
+import pathlib
 from distutils.core import setup
+import setuptools
+
+# The directory containing this file
+HERE = pathlib.Path(__file__).parent
+
+# The text of the README file
+README = (HERE / "README.md").read_text()
 
 setup(
     name="coperception",
-    packages=["coperception"],
-    version="0.0.1",
+    version="0.0.5",
+    package_data={
+        "": ["*.so"],
+    },
+    packages=setuptools.find_packages(),
     license="apache-2.0",  # Chose a license from here: https://help.github.com/articles/licensing-a-repository
     description="A library for collaborative perception.",
     author="AI4CE Lab @NYU",
