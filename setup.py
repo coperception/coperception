@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="coperception",
-    version="0.0.5",
+    version="0.0.6",
     package_data={
         "": ["*.so"],
     },
@@ -20,7 +20,7 @@ setup(
     author="AI4CE Lab @NYU",
     author_email="dm4524@nyu.edu",
     url="https://ai4ce.github.io/",
-    download_url="https://github.com/dekunma/coperception/releases/tag/v0.0.1-alpha.tar.gz",
+    download_url="https://github.com/coperception/coperception/archive/refs/tags/v0.0.1-alpha.tar.gz",
     keywords=[
         "computer-vision",
         "deep-learning",
