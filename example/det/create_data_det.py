@@ -37,16 +37,13 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
         channel_flag = True
         if channel in curr_sample["data"]:
             curr_sample_data = nusc.get("sample_data", curr_sample["data"][channel])
-            save_data_dict_list = (
-                list()
-            )  # for storing consecutive sequences; the data consists of timestamps, points, etc
-            save_box_dict_list = (
-                list()
-            )  # for storing box annotations in consecutive sequences
+            # for storing consecutive sequences; the data consists of timestamps, points, etc
+            save_data_dict_list = list()
+
+            # for storing box annotations in consecutive sequences
+            save_box_dict_list = list()
             save_instance_token_list = list()
-            # if config.split == 'val' or config.split == 'test':
-            #     save_box_dict_list_global = list()  # for storing box annotations in consecutive sequences
-            #     save_instance_token_list_global = list()
+
             adj_seq_cnt = 0
             save_seq_cnt = 0  # only used for save data file name
         else:
@@ -66,24 +63,10 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
         # -------------------------------------------------------------------------------------------------
         while channel_flag:
 
-            # if config.split == 'val' or config.split == 'test':
-            #     # "Get the global scene info for Global mAP evaluation, added by Yiming, 2020.10.7"
-            #     if flag_init == False:
-            #         all_pc_global, trans_matrices_map, x_origin, y_origin, x_filter, y_filter, num_sensor = \
-            #             LidarPointCloud.from_file_multisweep_globalmap_sample_data(0, 0, nusc, curr_sample_data,
-            #                                                                        flag_init=flag_init,
-            #                                                                        return_trans_matrix=True)
-            #         flag_init = True
-            #     else:
-            #         all_pc_global, trans_matrices_map, _, _, x_filter, y_filter, num_sensor = \
-            #             LidarPointCloud.from_file_multisweep_globalmap_sample_data(x_origin, y_origin, nusc,
-            #                                                                        curr_sample_data,
-            #                                                                        flag_init=flag_init,
-            #                                                                        return_trans_matrix=True)
-
             (all_pc_teacher, _,) = from_file_multisweep_upperbound_sample_data(
                 nusc, curr_sample_data, return_trans_matrix=False
             )
+
             (
                 all_pc_teacher_no_cross_road,
                 _,
@@ -107,25 +90,23 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
                 target_agent_id == current_agent
             ), "The target_agent_id mismatches the input agent id."
 
-            save_data_dict_all_agents_list = (
-                list()
-            )  # we only store one agent info in when2com
+            # we only store one agent info in when2com
+            save_data_dict_all_agents_list = list()
+
             # Store point cloud of each sweep
             pc = all_pc.points
 
-            # print(pc.shape)
-
             _, sort_idx = np.unique(all_times, return_index=True)
-            unique_times = all_times[
-                np.sort(sort_idx)
-            ]  # Preserve the item order in unique_times
+
+            # Preserve the item order in unique_times
+            unique_times = all_times[np.sort(sort_idx)]
             num_sweeps = len(unique_times)
 
             # Prepare data dictionary for the next step (ie, generating BEV maps)
             save_data_dict = dict()
-            box_data_dict = (
-                dict()
-            )  # for remapping the instance ids, according to class_map
+
+            # for remapping the instance ids, according to class_map
+            box_data_dict = dict()
             curr_token_list = list()
 
             for tid in range(num_sweeps):
@@ -146,12 +127,6 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
             save_data_dict[
                 "all_pc_teacher_no_cross_road"
             ] = all_pc_teacher_no_cross_road.points
-
-            # if config.split == 'val' or config.split == 'test':
-            #     box_data_dict_global = dict()  # for global mAP
-            #     curr_token_list_global = list()
-            #     save_data_dict['trans_matrices_map'] = trans_matrices_map
-            #     save_data_dict['all_pc_global'] = all_pc_global.points
 
             save_data_dict_all_agents_list.append(save_data_dict)
             # -------------------------------------------------------------------------------------------------
@@ -220,51 +195,6 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
             save_instance_token_list.append(curr_token_list)
 
             # -------------------------------------------------------------------------------------------------
-            # ----------------Now we get the global bounding boxes for global mAP evaluation-------------------
-            # -------------------------------------------------------------------------------------------------
-            # if config.split == 'val' or config.split == 'test':
-            #     if current_agent == 0:
-            #         num_instances_global = 0  # The number of instances within this sample
-            #         for ann_token in corresponding_sample_rec['anns']:
-            #             ann_rec = nusc.get('sample_annotation', ann_token)
-            #             category_name = ann_rec['category_name']
-            #             instance_token = ann_rec['instance_token']
-            #             flag = False
-            #             for c, v in config.class_map.items():
-            #                 if category_name.startswith(c):
-            #                     box_data_dict_global['category_' + instance_token] = v
-            #                     flag = True
-            #                     break
-            #             if not flag:
-            #                 box_data_dict_global['category_' + instance_token] = 4  # Other category
-
-            #             instance_boxes_global, instance_all_times_global, _, _ = LidarPointCloud. \
-            #                 get_instance_boxes_upperbound_sample_data(x_origin, y_origin, x_filter, y_filter, nusc,
-            #                                                           curr_sample_data,
-            #                                                           instance_token,
-            #                                                           nsweeps_back=config.nsweeps_back,
-            #                                                           nsweeps_forward=config.nsweeps_forward)
-
-            #             # Each row corresponds to a box annotation; the column consists of box center, box size, and quaternion
-            #             box_data_global = np.zeros((len(instance_boxes_global), 3 + 3 + 4), dtype=np.float32)
-            #             box_data_global.fill(np.nan)
-            #             for r, box in enumerate(instance_boxes_global):
-            #                 if box is not None:
-            #                     row = np.concatenate([box.center, box.wlh, box.orientation.elements])
-
-            #                     box_data_global[r] = row[:]
-
-            #             # Save the box data for current instance
-            #             box_data_dict_global['instance_boxes_' + instance_token] = box_data_global
-            #             num_instances_global += 1
-            #             curr_token_list_global.append(instance_token)
-
-            #         box_data_dict_global['num_instances'] = num_instances_global
-            #         save_box_dict_list_global.append(
-            #             box_data_dict_global)  # we only have one copy of ground-truth bounding box
-            #         save_instance_token_list_global.append(curr_token_list_global)
-
-            # -------------------------------------------------------------------------------------------------
             # ------------------- Now we generate sparse BEV map and reorganize gt_box ------------------------
             # -------------------------------------------------------------------------------------------------
             # Update the counter and save the data if desired (But here we do not want to
@@ -288,23 +218,6 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
 
                 gt_box_dict["num_instances"] = curr_save_box_dict["num_instances"]
 
-                # if config.split == 'val' or config.split == 'test':
-                #     if current_agent == 0:
-                #         # global box retrieving
-                #         curr_save_box_dict_global = save_box_dict_list_global[0]
-                #         gt_box_dict_global = dict()
-                #         for index, token in enumerate(save_instance_token_list_global[0]):
-                #             box_info = curr_save_box_dict_global['instance_boxes_' + token]
-                #             box_cat = curr_save_box_dict_global['category_' + token]
-
-                #             gt_box_dict_global['instance_boxes_' + str(index)] = box_info
-                #             gt_box_dict_global['category_' + str(index)] = box_cat
-
-                #         gt_box_dict_global['num_instances'] = curr_save_box_dict_global['num_instances']
-                #     else:
-                #         gt_box_dict_global = gt_box_dict
-                #     # save local and global gt_boxes
-                #     save_data_dict_list[0].append(gt_box_dict_global)
                 save_data_dict_list[0].append(gt_box_dict)
 
                 # Now we generate dense and sparse BEV maps
@@ -337,9 +250,7 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
                 save_data_dict_list = list()
                 save_box_dict_list = list()
                 save_instance_token_list = list()
-                # if config.split == 'val' or config.split == 'test':
-                #     save_box_dict_list_global = list()
-                #     save_instance_token_list_global = list()
+
                 # Skip some keyframes if necessary
                 flag = False
                 for _ in range(config.num_keyframe_skipped + 1):
@@ -506,8 +417,7 @@ def convert_to_dense_bev(seq_data_dict, config):
             voxel_indices_teacher_no_cross_road
         )
 
-    # # Finally, generate the ground-truth displacement field
-
+    # Finally, generate the ground-truth displacement field
     (
         label,
         reg_target,
@@ -532,48 +442,6 @@ def convert_to_dense_bev(seq_data_dict, config):
         print("label is none")
         return None
 
-    # if config.split == 'val' or config.split == 'test':
-    #     '''
-    #     Global point cloud voxel
-    #     '''
-    #     gt_dict_global = seq_data_dict[-2]
-    #     trans_matrices_map = data_dict['trans_matrices_map']
-    #     # Load point cloud
-    #     pc_list = []
-    #     for i in range(num_sweeps):
-    #         pc = data_dict['all_pc_global']
-    #         pc_list.append(pc.T)
-
-    #     # Discretize the input point clouds
-    #     voxel_indices_list_global = list()
-    #     padded_voxel_points_list_global = list()
-
-    #     for i in range(num_sweeps):
-    #         res_global, voxel_indices_global = voxelize_occupy(pc_list[i], voxel_size=config_global.voxel_size,
-    #                                                            extents=config_global.area_extents, return_indices=True)
-    #         voxel_indices_list_global.append(voxel_indices_global)
-    #         padded_voxel_points_list_global.append(res_global)
-
-    #     padded_voxel_points_global = np.stack(padded_voxel_points_list_global, axis=0).astype(np.bool)
-
-    #     if target_agent_id == 0:
-    #         _, reg_target_global, allocation_map_global, gt_max_iou_global, reg_loss_mask_global, _ = \
-    #             Generate_object_detection_gt(gt_dict_global, config_global.voxel_size, config_global.area_extents,
-    #                                          config_global.anchor_size, config_global.map_dims, \
-    #                                          config_global.pred_len, config_global.nsweeps_back,
-    #                                          config_global.box_code_size, config_global.category_threshold,
-    #                                          config_global)
-    #     else:
-    #         # Generate_object_detection_gt is very time-consuming, so we only use it in agent0
-    #         reg_target_global = reg_target
-    #         allocation_map_global = allocation_map
-    #         gt_max_iou_global = gt_max_iou
-    #         reg_loss_mask_global = reg_loss_mask
-
-    #     return voxel_indices_list, padded_voxel_points, trans_matrices_warping, trans_matrices_no_cross_road, trans_matrices_map, \
-    #            label, reg_target, allocation_map, gt_max_iou, reg_loss_mask, motion_state, visibility_maps, target_agent_id, num_sensor, \
-    #            voxel_indices_list_global, padded_voxel_points_global, allocation_map_global, reg_target_global, gt_max_iou_global, reg_loss_mask_global
-
     else:
         return (
             voxel_indices_list,
@@ -597,12 +465,6 @@ def convert_to_dense_bev(seq_data_dict, config):
 # ---------------------- Convert the dense BEV data into sparse format ----------------------
 # This will significantly reduce the space used for data storage
 def convert_to_sparse_bev(config, dense_bev_data, use_motion_state=False):
-    # if config.split == 'val' or config.split == 'test':
-    #     save_voxel_indices_list, save_voxel_points, save_trans_matrices_warp, save_trans_matrices_no_cross_road, save_trans_matrices_map, \
-    #     save_label, save_reg_target, save_allocation_mask, gt_max_iou, reg_loss_mask, motion_state, visibility_maps, target_agent_id, num_sensor, \
-    #     voxel_indices_list_global, padded_voxel_points_global, allocation_map_global, reg_target_global, gt_max_iou_global, reg_loss_mask_global \
-    #         = dense_bev_data
-    # else:
     (
         save_voxel_indices_list,
         voxel_indices_list_teacher,
@@ -658,7 +520,6 @@ def convert_to_sparse_bev(config, dense_bev_data, use_motion_state=False):
     save_data_dict["trans_matrices"] = save_trans_matrices_warp
     save_data_dict["trans_matrices_no_cross_road"] = save_trans_matrices_no_cross_road
 
-    # if config.split == 'train':
     save_data_dict["voxel_indices_teacher"] = voxel_indices_list_teacher[0].astype(
         np.int32
     )
@@ -666,17 +527,7 @@ def convert_to_sparse_bev(config, dense_bev_data, use_motion_state=False):
         "voxel_indices_teacher_no_cross_road"
     ] = voxel_indices_list_teacher_no_cross_road[0].astype(np.int32)
 
-    # "For global mAP evaluation."
-    # if config.split == 'val' or config.split == 'test':
-    #     save_reg_target_sparse_global = reg_target_global[allocation_map_global]
-    #     save_data_dict['reg_target_sparse_global'] = save_reg_target_sparse_global
-    #     save_data_dict['gt_max_iou_global'] = gt_max_iou_global
-    #     save_data_dict['allocation_mask_global'] = allocation_map_global
-    #     save_data_dict['reg_loss_mask_global'] = reg_loss_mask_global
-    #     save_data_dict['trans_matrices_map'] = save_trans_matrices_map
-    #     save_data_dict['voxel_indices_global'] = voxel_indices_list_global[0].astype(np.int32)
     # -------------------------------- Sanity Check --------------------------------
-
     for i in range(len(save_voxel_indices_list)):
         indices = save_data_dict["voxel_indices_" + str(i)]
         curr_voxels = np.zeros(save_voxel_dims, dtype=bool)
@@ -733,12 +584,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c", "--current_agent", default=0, type=int, help="current_agent"
     )
-    parser.add_argument(
-        "-b", "--scene_begin", default=80, type=int, help="scene_begin"
-    )  # 0
-    parser.add_argument(
-        "-e", "--scene_end", default=91, type=int, help="scene_end"
-    )  # 7
+    parser.add_argument("-b", "--scene_begin", default=80, type=int, help="scene_begin")
+    parser.add_argument("-e", "--scene_end", default=91, type=int, help="scene_end")
     parser.add_argument(
         "-p",
         "--savepath",
