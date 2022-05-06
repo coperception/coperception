@@ -1,10 +1,16 @@
 # Copyright (c) 2020 Mitsubishi Electric Research Laboratories (MERL). All rights reserved. The software, documentation and/or data in this file is provided on an "as is" basis, and MERL has no obligations to provide maintenance, support, updates, enhancements or modifications. MERL specifically disclaims any warranties, including, but not limited to, the implied warranties of merchantability and fitness for any particular purpose. In no event shall MERL be liable to any party for direct, indirect, special, incidental, or consequential damages, including lost profits, arising out of the use of this software and its documentation, even if MERL has been advised of the possibility of such damages. As more fully described in the license agreement that was required in order to download this software, documentation and/or data, permission to use, copy and modify this software without fee is granted, but only for educational, research and non-commercial purposes.
 import argparse
+import os
 
 from coperception.utils import mapping
 from coperception.configs import Config, ConfigGlobal
 from coperception.utils.data_util import voxelize_occupy
 from coperception.utils.obj_util import *
+from coperception.utils.nuscenes_pc_util import (
+    from_file_multisweep_upperbound_sample_data,
+    from_file_multisweep_warp2com_sample_data,
+)
+from nuscenes import NuScenes
 from nuscenes.utils.data_classes import LidarPointCloud
 
 
@@ -75,16 +81,13 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
             #                                                                        flag_init=flag_init,
             #                                                                        return_trans_matrix=True)
 
-            (
-                all_pc_teacher,
-                _,
-            ) = LidarPointCloud.from_file_multisweep_upperbound_sample_data(
+            (all_pc_teacher, _,) = from_file_multisweep_upperbound_sample_data(
                 nusc, curr_sample_data, return_trans_matrix=False
             )
             (
                 all_pc_teacher_no_cross_road,
                 _,
-            ) = LidarPointCloud.from_file_multisweep_upperbound_sample_data(
+            ) = from_file_multisweep_upperbound_sample_data(
                 nusc, curr_sample_data, return_trans_matrix=False, no_cross_road=True
             )
 
@@ -96,7 +99,7 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
                 trans_matrices_no_cross_road,
                 target_agent_id,
                 num_sensor,
-            ) = LidarPointCloud.from_file_multisweep_warp2com_sample_data(
+            ) = from_file_multisweep_warp2com_sample_data(
                 current_agent, nusc, curr_sample_data, return_trans_matrix=True
             )
 
@@ -512,7 +515,7 @@ def convert_to_dense_bev(seq_data_dict, config):
         gt_max_iou,
         reg_loss_mask,
         motion_state,
-    ) = Generate_object_detection_gt(
+    ) = generate_object_detection_gt(
         gt_dict,
         config.voxel_size,
         config.area_extents,
