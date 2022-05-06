@@ -16,3 +16,4 @@ dependencies:
     - mmcv
     - terminaltables
     - shapely
+    - coperception
