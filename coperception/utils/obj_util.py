@@ -8,6 +8,127 @@ import math
 import time
 
 
+def generate_object_detection_gt(
+    data_dict,
+    voxel_size,
+    area_extents,
+    anchor_size,
+    map_dims,
+    pred_len,
+    nsweeps_back,
+    box_code_size,
+    category_threshold,
+    config,
+):
+    # Retrieve the instance boxes
+    num_instances = data_dict["num_instances"]
+    instance_box_list = list()
+    instance_cat_list = list()  # for instance categories
+
+    for i in range(num_instances):
+        instance = data_dict["instance_boxes_" + str(i)]
+        category = data_dict["category_" + str(i)]
+        if np.max(np.abs(instance[0, :2])) > (np.max(area_extents[:, 1]) + 0.5):
+            continue
+        if config.binary:
+            if category != 1:
+                continue
+
+        instance_box_list.append(instance)
+        instance_cat_list.append(category)
+
+    if len(instance_box_list) < 1:
+        return None, None, None, None, None, None
+
+    # Initialize anchors, each anchor is encoded as (center_x, center_y, w, h, sin(theta), cos(theta))
+    anchors_map = init_anchors_no_check(
+        area_extents, voxel_size, box_code_size, anchor_size
+    )
+
+    # Generate corners coordinates for each gt instance box and anchor, prepare for overlap check
+    gt_corners_list = get_gt_corners_list(instance_box_list)
+    anchor_corners_list = get_anchor_corners_list(anchors_map, box_code_size)
+
+    # debug_t = time.time()
+    # Generate overlap matrix [num_anchors, num_instance]
+    overlaps = compute_overlaps_gen_gt(
+        anchor_corners_list, gt_corners_list
+    )  # (anchor_num,instance_num)
+
+    # print(time.time()-debug_t)
+    # exit()
+
+    # Generate anchor_instance_map for all anchors. shape: (W,H,anchor_per_loc), each anchor either has value as -1 or [0, num_instnace-1]
+    association_map = (np.ones((overlaps.shape[0])) * (-1)).astype(np.int32)
+    association_map[np.amax(overlaps, axis=1) > 0.0] = np.argmax(overlaps, axis=1)[
+        np.max(overlaps, axis=1) > 0
+    ]
+    anchor_instance_map = association_map.reshape(
+        (map_dims[0], map_dims[1], len(anchor_size))
+    )  # record each anchors' target instance
+
+    # Reshape overlaps array as (num_instance, W, H, num_anchors)
+    anchor_match_scores_map = overlaps.reshape(
+        ((map_dims[0], map_dims[1], len(anchor_size), len(instance_box_list)))
+    )  # record each anchors' every class scores
+    gt_overlaps = anchor_match_scores_map.copy().transpose(3, 0, 1, 2)
+
+    """
+    Find the idx of anchors that have max iou with each instance box.
+    gt_max_iou_idx[x] records index (i,j,k) for anchor that match instance x most.
+    """
+    gt_max_iou_idx = []
+    for i in range(gt_overlaps.shape[0]):
+        instance_overlaps = gt_overlaps[i]
+        gt_max_iou_idx.append(
+            np.asarray(
+                (
+                    np.unravel_index(
+                        np.argmax(instance_overlaps, axis=None), instance_overlaps.shape
+                    )
+                )
+                + (instance_cat_list[i],)
+            )
+        )  # most matched anchor for each instance
+
+        # if there exist a ground truth box not assigned to any predefined box, we will assign it to its highest overlapping predefined box ignoring the fixed threshold
+        if (
+            anchor_match_scores_map[tuple(gt_max_iou_idx[i][:-1]) + (i,)]
+            < category_threshold[instance_cat_list[i]]
+        ):
+
+            anchor_instance_map[tuple(gt_max_iou_idx[i][:-1])] = i
+
+    allocation_mask = anchor_instance_map > -1
+
+    # Generate gt, label: (W,H,num_anchors_per_loc), reg_target: (W, H, num_anchors_per_loc, pred_len, box_code_size)
+    if config.code_type[0] == "f":
+        label, reg_target, reg_loss_mask, motion_state = generate_gts(
+            anchor_instance_map,
+            instance_cat_list,
+            instance_box_list,
+            anchors_map,
+            anchor_size,
+            nsweeps_back,
+            pred_len,
+            map_dims,
+            category_threshold,
+            box_code_size,
+            config,
+        )
+    else:
+        print(config.code_type, " Not Implemented!")
+
+    return (
+        label,
+        reg_target,
+        allocation_mask,
+        np.asarray(gt_max_iou_idx),
+        reg_loss_mask,
+        motion_state,
+    )
+
+
 """
 redundent functions in postprocess.py
 """
