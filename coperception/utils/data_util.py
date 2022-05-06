@@ -543,7 +543,7 @@ def gen_2d_grid_gt(
         )  # we only consider the 2D field
 
         # We only compute loss for valid pixels where there are corresponding box annotations between two frames
-        valid_pixels = np.zeros(unique_indices.shape[0], dtype=np.bool)
+        valid_pixels = np.zeros(unique_indices.shape[0], dtype=bool)
 
         for h, v in enumerate(zip(unique_indices, num_points_in_pixel)):
 

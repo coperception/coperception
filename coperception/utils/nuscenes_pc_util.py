@@ -1,9 +1,9 @@
-from nuscenes.utils.data_classes import PointCloud
+from nuscenes.utils.data_classes import LidarPointCloud
 import numpy as np
 from functools import reduce
 from typing import Dict
 from nuscenes import NuScenes
-from nuscenes.utils.geometry_utils import view_points, transform_matrix
+from nuscenes.utils.geometry_utils import transform_matrix
 from pyquaternion import Quaternion
 import os.path as osp
 
@@ -29,8 +29,8 @@ def from_file_multisweep_upperbound_sample_data(
     """
 
     # Init
-    points = np.zeros((PointCloud.nbr_dims(), 0))
-    all_pc = PointCloud(points)
+    points = np.zeros((LidarPointCloud.nbr_dims(), 0))
+    all_pc = LidarPointCloud(points)
     all_times = np.zeros((1, 0))
 
     # Get reference pose and timestamp
@@ -65,7 +65,7 @@ def from_file_multisweep_upperbound_sample_data(
         # Load up the pointcloud.
         pointsensor_token = sample_record["data"]["LIDAR_TOP_id_" + str(k)]
         current_sd_rec = nusc.get("sample_data", pointsensor_token)
-        current_pc = PointCloud.from_file(
+        current_pc = LidarPointCloud.from_file(
             osp.join(nusc.dataroot, current_sd_rec["filename"])
         )
 
@@ -197,7 +197,7 @@ def from_file_multisweep_warp2com_sample_data(
 
         if x_local[k] == 0.0 and y_local[k] == 0.0:
             target_agent_id = k
-            current_pc = PointCloud.from_file(
+            current_pc = LidarPointCloud.from_file(
                 osp.join(nusc.dataroot, current_sd_rec["filename"])
             )
             # Remove close points and add timevector.

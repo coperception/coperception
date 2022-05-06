@@ -408,7 +408,7 @@ def generate_gts(
 
     reg_loss_mask = np.ones(
         (map_dims[0], map_dims[1], len(anchor_size), pred_len)
-    ).astype(np.bool)
+    ).astype(bool)
     reg_target = np.zeros(
         (map_dims[0], map_dims[1], len(anchor_size), pred_len, box_code_size)
     )
@@ -732,9 +732,9 @@ if __name__ == "__main__":
         box_code_size = 6  # (x,y,w,h,sin,cos)
 
     data = np.load(sys.argv[1], allow_pickle=True).item()
-    reg_mask = data["reg_loss_mask"].astype(np.bool)
+    reg_mask = data["reg_loss_mask"].astype(bool)
 
-    reg_loss_mask = data["reg_loss_mask"].astype(np.bool)
+    reg_loss_mask = data["reg_loss_mask"].astype(bool)
 
     # reg_mask = np.max(reg_mask,axis=-1)
     v = data["voxel_indices_4"]
@@ -749,7 +749,7 @@ if __name__ == "__main__":
 
     reg_target_sparse = data["reg_target_sparse"]
     label = data["label_sparse"]
-    mask = data["allocation_mask"].astype(np.bool)
+    mask = data["allocation_mask"].astype(bool)
     gt_max_iou_idx = data["gt_max_iou"]
     # print(gt_max_iou_idx)
 

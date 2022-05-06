@@ -524,8 +524,8 @@ class NuscenesDataset(Dataset):
             if len(self.cache) < self.cache_size:
                 self.cache[idx] = gt_dict
 
-        allocation_mask = gt_dict["allocation_mask"].astype(np.bool)
-        reg_loss_mask = gt_dict["reg_loss_mask"].astype(np.bool)
+        allocation_mask = gt_dict["allocation_mask"].astype(bool)
+        reg_loss_mask = gt_dict["reg_loss_mask"].astype(bool)
         gt_max_iou = gt_dict["gt_max_iou"]
         motion_one_hot = np.zeros(5)
         motion_mask = np.zeros(5)
