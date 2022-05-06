@@ -393,7 +393,7 @@ class KittiMOTS(_BaseDataset):
 
             # Only extract relevant dets for this class for preproc and eval (cls)
             gt_class_mask = np.atleast_1d(raw_data["gt_classes"][t] == cls_id)
-            gt_class_mask = gt_class_mask.astype(np.bool)
+            gt_class_mask = gt_class_mask.astype(bool)
             gt_ids = raw_data["gt_ids"][t][gt_class_mask]
             gt_dets = [
                 raw_data["gt_dets"][t][ind]
@@ -402,7 +402,7 @@ class KittiMOTS(_BaseDataset):
             ]
 
             tracker_class_mask = np.atleast_1d(raw_data["tracker_classes"][t] == cls_id)
-            tracker_class_mask = tracker_class_mask.astype(np.bool)
+            tracker_class_mask = tracker_class_mask.astype(bool)
             tracker_ids = raw_data["tracker_ids"][t][tracker_class_mask]
             tracker_dets = [
                 raw_data["tracker_dets"][t][ind]

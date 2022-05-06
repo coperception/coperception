@@ -463,7 +463,7 @@ def convert_to_dense_bev(seq_data_dict, config):
 
     # Compile the batch of voxels, so that they can be fed into the network.
     # Note that, the padded_voxel_points in this script will only be used for sanity check.
-    padded_voxel_points = np.stack(padded_voxel_points_list, axis=0).astype(np.bool)
+    padded_voxel_points = np.stack(padded_voxel_points_list, axis=0).astype(bool)
 
     # -----------------------------------------------------------------
     # ----------------------------------------------------------------
@@ -679,7 +679,7 @@ def convert_to_sparse_bev(config, dense_bev_data, use_motion_state=False):
 
     for i in range(len(save_voxel_indices_list)):
         indices = save_data_dict["voxel_indices_" + str(i)]
-        curr_voxels = np.zeros(save_voxel_dims, dtype=np.bool)
+        curr_voxels = np.zeros(save_voxel_dims, dtype=bool)
         curr_voxels[indices[:, 0], indices[:, 1], indices[:, 2]] = 1
         assert np.all(curr_voxels == save_voxel_points[i]), "Error: Mismatch"
 

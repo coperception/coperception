@@ -195,7 +195,7 @@ class JAndF(_BaseMetric):
          January 2003
         """
 
-        seg = seg.astype(np.bool)
+        seg = seg.astype(bool)
         seg[seg > 0] = 1
 
         assert np.atleast_3d(seg).shape[2] == 1
