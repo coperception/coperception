@@ -4,6 +4,7 @@ from multiprocessing import Manager
 
 import numpy as np
 from torch.utils.data import Dataset
+from coperception.utils.obj_util import init_anchors_no_check
 
 
 class NuscenesDataset(Dataset):
