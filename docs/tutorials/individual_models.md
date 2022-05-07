@@ -58,7 +58,7 @@ criterion = {'cls': SoftmaxFocalClassificationLoss(), 'loc': WeightedSmoothL1Loc
     selection:
       members: none
 
-![FaFNet](./assets/images/fafnet.png)
+![FaFNet](/assets/images/fafnet.png)
 
 ### Detection
 **Initialization**

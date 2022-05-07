@@ -56,7 +56,7 @@ for p in range(v2x_det_dataset.pred_len):
     m[m < 0] = 0.5
     free = (m * 255).astype(np.uint8)
 ```
-![vis_voxel_det](./assets/images/vis_det_voxel.png)  
+![vis_voxel_det](/assets/images/vis_det_voxel.png)  
 
 
 
@@ -83,7 +83,7 @@ padded_voxel_points = padded_voxel_points.cpu().detach().numpy()
 
 plt.imshow(np.max(padded_voxel_points.reshape(256, 256, 13), axis=2), alpha=1.0, zorder=12)
 ```
-![vis_seg_voxel](./assets/images/vis_seg_voxel.png)  
+![vis_seg_voxel](/assets/images/vis_seg_voxel.png)  
 
 To show ground-truth visualization:
 ```python
@@ -115,4 +115,4 @@ plt.imshow(gt_image)
 The color scheme is defined in `class_to_rgb` in:
 ::: coperception.configs.Config.Config
 
-![vis_seg_voxel](./assets/images/vis_seg_gt.png)  
+![vis_seg_voxel](/assets/images/vis_seg_gt.png)  

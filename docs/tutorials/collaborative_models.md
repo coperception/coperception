@@ -59,7 +59,7 @@ criterion = {'cls': SoftmaxFocalClassificationLoss(), 'loc': WeightedSmoothL1Loc
     selection:
       members: none
 
-![DiscoNet](./assets/images/disconet.png)
+![DiscoNet](/assets/images/disconet.png)
 
 
 For DiscoNet, we need a pre-trained model as the teacher net in the knowledge distillation process.  
@@ -118,7 +118,7 @@ loss, cls_loss, loc_loss, result, save_agent_weight_list = fafmodule.predict_all
     selection:
       members: none
 
-![V2VNet](./assets/images/v2vnet.png)
+![V2VNet](/assets/images/v2vnet.png)
 
 ### Detection
 **Initialization**
@@ -168,7 +168,7 @@ loss, cls_loss, loc_loss, result = faf_module.predict_all(data, batch_size=1, nu
     selection:
       members: none
 
-![When2com](./assets/images/when2com.png)
+![When2com](/assets/images/when2com.png)
 
 When2com and Who2com uses the same model.  
 They only differ in the inference stage.

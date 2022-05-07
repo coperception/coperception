@@ -6,3 +6,20 @@ theme:
 plugins:
   - search
   - mkdocstrings
+
+nav:
+  - getting started:
+    - index.md
+    - getting_started/installation.md
+    - Github Repo: https://github.com/coperception/coperception
+  - example programs:
+    - example_programs/index.md
+    - example_programs/det.md
+    - example_programs/seg.md
+    - example_programs/track.md
+  - datasets:
+    - datasets/v2x_sim.md
+  - tutorials:
+    - tutorials/individual_models.md
+    - tutorials/collaborative_models.md
+    - tutorials/visualization.md
