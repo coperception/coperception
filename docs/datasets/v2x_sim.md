@@ -32,7 +32,7 @@ Currently, 3 tasks are supported:
 
 Data creation steps:  
 
-1. `cd` into either of the directories of these tasks in `example/`
+1. `cd` into either of the directories of these tasks in `tools/`
 2. Open `Makefile` in your text editor
 3. Change the required arguments of task `create_data` based on your needs
 4. Run `make create_data`

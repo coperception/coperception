@@ -1,7 +1,7 @@
 ## Tracking
 
 We used the [sort algorithm](https://github.com/abewley/sort) as our benchmark trackers and use the detection results obtained from our detection task to evaluate.
-You can find and configure all the arguments for the program in the `example/seg/Makefile` file.
+You can find and configure all the arguments for the program in the `tools/seg/Makefile` file.
 
 ## Preparation
 Choose one of our supported datasets, for example, [V2X-Sim](/datasets/v2x_sim), and perform its data preparation steps based on our documentation.
