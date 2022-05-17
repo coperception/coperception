@@ -20,7 +20,6 @@ class V2VNet(SegModelBase):
         )
 
     def forward(self, x, trans_matrices, num_agent_tensor):
-        device = x.device
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
@@ -28,13 +27,13 @@ class V2VNet(SegModelBase):
         size = (1, 512, 32, 32)
 
         batch_size = x.size(0) // self.num_agent
-        feat_map, feat_list = super().build_feat_map_and_feat_list(x4, batch_size)
+        feat_list = super().build_feat_list(x4, batch_size)
 
         local_com_mat = torch.cat(tuple(feat_list), 1)
         local_com_mat_update = torch.cat(tuple(feat_list), 1)
 
         for b in range(batch_size):
-            num_agent = self.num_agent
+            com_num_agent = num_agent_tensor[b, 0]
 
             agent_feat_list = list()
             for nb in range(self.num_agent):
@@ -43,18 +42,22 @@ class V2VNet(SegModelBase):
             for _ in range(self.gnn_iter_num):
                 updated_feats_list = list()
 
-                for i in range(num_agent):
+                for i in range(com_num_agent):
                     tg_agent = local_com_mat[b, i]
-                    all_warp = trans_matrices[b, i]
 
                     neighbor_feat_list = list()
                     neighbor_feat_list.append(tg_agent)
 
-                    for j in range(num_agent):
+                    for j in range(com_num_agent):
                         if j != i:
                             neighbor_feat_list.append(
                                 super().feature_transformation(
-                                    b, j, local_com_mat, all_warp, device, size
+                                    b,
+                                    j,
+                                    i,
+                                    local_com_mat,
+                                    size,
+                                    trans_matrices,
                                 )
                             )
 
@@ -65,13 +68,10 @@ class V2VNet(SegModelBase):
                     updated_feat = torch.squeeze(torch.squeeze(updated_feat, 0), 0)
                     updated_feats_list.append(updated_feat)
                 agent_feat_list = updated_feats_list
-            for k in range(num_agent):
+            for k in range(com_num_agent):
                 local_com_mat_update[b, k] = agent_feat_list[k]
 
-        feat_list = []
-        for i in range(self.num_agent):
-            feat_list.append(local_com_mat_update[:, i, :, :, :])
-        feat_mat = torch.cat(feat_list, 0)
+        feat_mat = super().agents_to_batch(local_com_mat_update)
 
         x5 = self.down4(feat_mat)
         x = self.up1(x5, feat_mat)

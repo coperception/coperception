@@ -16,7 +16,6 @@ class FusionBase(SegModelBase):
         )
 
     def forward(self, x, trans_matrices, num_agent_tensor):
-        device = x.device
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
@@ -24,7 +23,7 @@ class FusionBase(SegModelBase):
         size = (1, 512, 32, 32)
 
         batch_size = x.size(0) // self.num_agent
-        feat_map, feat_list = super().build_feat_map_and_feat_list(x4, batch_size)
+        feat_list = super().build_feat_list(x4, batch_size)
 
         local_com_mat = torch.cat(tuple(feat_list), 1)
         local_com_mat_update = torch.cat(tuple(feat_list), 1)
@@ -38,7 +37,6 @@ class FusionBase(SegModelBase):
 
             for i in range(self.com_num_agent):
                 self.tg_agent = local_com_mat[b, i]
-                all_warp = trans_matrices[b, i]
 
                 self.neighbor_feat_list = list()
                 self.neighbor_feat_list.append(self.tg_agent)
@@ -47,16 +45,18 @@ class FusionBase(SegModelBase):
                     if j != i:
                         self.neighbor_feat_list.append(
                             super().feature_transformation(
-                                b, j, local_com_mat, all_warp, device, size
+                                b,
+                                j,
+                                i,
+                                local_com_mat,
+                                size,
+                                trans_matrices,
                             )
                         )
 
                 local_com_mat_update[b, i] = self.fusion()
 
-        feat_list = []
-        for i in range(self.num_agent):
-            feat_list.append(local_com_mat_update[:, i, :, :, :])
-        feat_mat = torch.cat(feat_list, 0)
+        feat_mat = super().agents_to_batch(local_com_mat_update)
 
         x5 = self.down4(feat_mat)
         x6 = self.up1(x5, feat_mat)

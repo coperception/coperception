@@ -161,7 +161,7 @@ class When2Com_UNet(SegModelBase):
         ).to(device)
 
         # get feat maps for each agent
-        feat_map, feat_list = super().build_feat_map_and_feat_list(x4, batch_size)
+        feat_list = super().build_feat_list(x4, batch_size)
 
         """""" """""" """""" """""" """""" """""" """""" """""" """""" """
          generate value matrix for each agent, Yiming, 2021.4.22
@@ -172,17 +172,20 @@ class When2Com_UNet(SegModelBase):
                 tuple(feat_list), 1
             )  # [2 5 512 16 16] [batch, agent, channel, height, width]
             for b in range(batch_size):
-                # num_agent = num_agent_tensor[b, 0]
-                num_agent = self.num_agent
-                for i in range(num_agent):
+                com_num_agent = num_agent_tensor[b, 0]
+                for i in range(com_num_agent):
                     tg_agent = local_com_mat[b, i]
-                    all_warp = trans_matrices[b, i]  # transformation [2 5 5 4 4]
-                    for j in range(num_agent):
+                    for j in range(com_num_agent):
                         if j == i:
                             val_mat[b, i, j] = tg_agent
                         else:
                             val_mat[b, i, j] = super().feature_transformation(
-                                b, j, local_com_mat, all_warp, device, size
+                                b,
+                                j,
+                                i,
+                                local_com_mat,
+                                size,
+                                trans_matrices,
                             )
         else:
             val_mat = torch.cat(tuple(feat_list), 1)
