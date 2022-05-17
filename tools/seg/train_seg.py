@@ -14,6 +14,7 @@ from coperception.utils.loss import *
 from coperception.models.seg import *
 from coperception.utils.AverageMeter import AverageMeter
 import glob
+import os
 
 
 def main(config, args):
