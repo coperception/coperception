@@ -31,33 +31,35 @@ log_base := logs
 epoch_num := 100
 # If given, the model will resume from its most recent (by modification time) check point
 auto_resume_path := $(log_base)
+# compress_level
+compress_level := 0
 
 create_data:
 	python create_data_det.py --root $(original_data_path) --split $(split) --scene_begin $(scene_begin) --scene_end $(scene_end) --savepath $(create_data_save_path) --from_agent $(from_agent) --to_agent $(to_agent)
 
 train_bound:
-	python $(training_script) --data $(training_data) --bound $(bound) --log --batch $(batch_size) --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --batch $(batch_size) --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base) --compress_level $(compress_level)
 
 train_bound_nc:
-	python $(training_script) --data $(training_data) --bound $(bound) --log --batch $(batch_size) --no_cross_road --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --batch $(batch_size) --no_cross_road --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base) --compress_level $(compress_level)
 
 train:
-	python $(training_script) --data $(training_data) --bound lowerbound --com $(com) --log --batch $(batch_size) --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base)
+	python $(training_script) --data $(training_data) --bound lowerbound --com $(com) --log --batch $(batch_size) --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base) --compress_level $(compress_level)
 
 train_nc:
-	python $(training_script) --data $(training_data) --bound lowerbound --com $(com) --log --batch $(batch_size) --no_cross_road --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base) 
+	python $(training_script) --data $(training_data) --bound lowerbound --com $(com) --log --batch $(batch_size) --no_cross_road --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base) --compress_level $(compress_level)
 
 train_warp:
-	python $(training_script) --data $(training_data) --bound $(bound) --com $(com) --log --batch $(batch_size) --warp_flag --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base) 
+	python $(training_script) --data $(training_data) --bound $(bound) --com $(com) --log --batch $(batch_size) --warp_flag --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base) --compress_level $(compress_level)
 
 train_warp_nc:
-	python $(training_script) --data $(training_data) --bound $(bound) --com $(com) --log --batch $(batch_size) --warp_flag --no_cross_road --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base)
+	python $(training_script) --data $(training_data) --bound $(bound) --com $(com) --log --batch $(batch_size) --warp_flag --no_cross_road --auto_resume_path $(auto_resume_path) --nepoch $(epoch_num) --logpath $(log_base) --compress_level $(compress_level)
 
 train_disco:
-	python $(training_script) --data $(training_data) --bound $(bound) --com disco --log --batch $(batch_size) --kd_flag 1 --resume_teacher $(log_base)/upperbound/with_cross/epoch_$(epoch_num).pth --auto_resume_path $(auto_resume_path) --logpath $(log_base)  --nepoch $(epoch_num)
+	python $(training_script) --data $(training_data) --bound $(bound) --com disco --log --batch $(batch_size) --kd_flag 1 --resume_teacher $(log_base)/upperbound/with_cross/epoch_$(epoch_num).pth --auto_resume_path $(auto_resume_path) --logpath $(log_base) --nepoch $(epoch_num) --compress_level $(compress_level)
 
 train_disco_nc:
-	python $(training_script) --data $(training_data) --bound $(bound) --com disco --log --batch $(batch_size) --kd_flag 1 --resume_teacher	$(log_base)/upperbound/no_cross/epoch_$(epoch_num).pth --no_cross_road --auto_resume_path $(auto_resume_path) --logpath $(log_base)  --nepoch $(epoch_num)
+	python $(training_script) --data $(training_data) --bound $(bound) --com disco --log --batch $(batch_size) --kd_flag 1 --resume_teacher	$(log_base)/upperbound/no_cross/epoch_$(epoch_num).pth --no_cross_road --auto_resume_path $(auto_resume_path) --logpath $(log_base) --nepoch $(epoch_num) --compress_level $(compress_level)
 
 test_bound:
 	python $(testing_script) --data $(testing_data) --bound $(bound) --resume $(log_base)/$(bound)/with_cross/epoch_$(epoch_num).pth --tracking --logpath $(log_base)

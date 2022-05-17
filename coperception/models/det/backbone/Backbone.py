@@ -6,7 +6,7 @@ import torch
 class Backbone(nn.Module):
     """The backbone class that contains encode and decode function"""
 
-    def __init__(self, height_feat_size, compress_channel_size=32):
+    def __init__(self, height_feat_size, compress_level=0):
         super().__init__()
         self.conv_pre_1 = nn.Conv2d(
             height_feat_size, 32, kernel_size=3, stride=1, padding=1
@@ -70,24 +70,26 @@ class Backbone(nn.Module):
         self.bn8_1 = nn.BatchNorm2d(32)
         self.bn8_2 = nn.BatchNorm2d(32)
 
+        assert compress_level >= 0 and compress_level <= 8
+        self.compress_level = compress_level
+        compress_channel_num = 256 // (2**compress_level)
+
         # currently only support compress/decompress at layer x_3
         self.com_compresser = nn.Conv2d(
-            256, compress_channel_size, kernel_size=1, stride=1
+            256, compress_channel_num, kernel_size=1, stride=1
         )
-        self.bn_compress = nn.BatchNorm2d(compress_channel_size)
+        self.bn_compress = nn.BatchNorm2d(compress_channel_num)
 
         self.com_decompresser = nn.Conv2d(
-            compress_channel_size, 256, kernel_size=1, stride=1
+            compress_channel_num, 256, kernel_size=1, stride=1
         )
         self.bn_decompress = nn.BatchNorm2d(256)
 
-    def encode(self, x, requires_compression=True):
+    def encode(self, x):
         """Encode the input BEV features.
 
         Args:
             x (tensor): the input BEV features.
-            requires_compression (bool, optional): If true, pass the feature through a compresser
-                and a decompresser after the last layer. Defaults to True.
 
         Returns:
             A list that contains all the encoded layers.
@@ -133,8 +135,9 @@ class Backbone(nn.Module):
         x_4 = F.relu(self.bn4_2(self.conv4_2(x_4)))
 
         # compress x_3 (the layer that agents communicates on)
-        if requires_compression:
+        if self.compress_level > 0:
             x_3 = F.relu(self.bn_compress(self.com_compresser(x_3)))
+            print(x_3.shape)
             x_3 = F.relu(self.bn_decompress(self.com_decompresser(x_3)))
 
         return [x, x_1, x_2, x_3, x_4]
@@ -242,12 +245,12 @@ class Backbone(nn.Module):
 class STPN_KD(Backbone):
     """Used by non-intermediate models. Pass the output from encoder directly to decoder."""
 
-    def __init__(self, height_feat_size=13):
-        super().__init__(height_feat_size)
+    def __init__(self, height_feat_size=13, compress_level=0):
+        super().__init__(height_feat_size, compress_level)
 
     def forward(self, x):
         batch, seq, z, h, w = x.size()
-        encoded_layers = super().encode(x, requires_compression=False)
+        encoded_layers = super().encode(x)
         decoded_layers = super().decode(
             *encoded_layers, batch, kd_flag=True, requires_adaptive_max_pool3d=True
         )
@@ -257,11 +260,11 @@ class STPN_KD(Backbone):
 class LidarEncoder(Backbone):
     """The encoder class. Encodes input features in forward pass."""
 
-    def __init__(self, height_feat_size=13):
-        super().__init__(height_feat_size)
+    def __init__(self, height_feat_size=13, compress_level=0):
+        super().__init__(height_feat_size, compress_level)
 
-    def forward(self, x, requires_compression=True):
-        return super().encode(x, requires_compression=requires_compression)
+    def forward(self, x):
+        return super().encode(x)
 
 
 class LidarDecoder(Backbone):

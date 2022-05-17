@@ -2,8 +2,16 @@ from coperception.models.det.base.IntermediateModelBase import IntermediateModel
 
 
 class FusionBase(IntermediateModelBase):
-    def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5):
-        super(FusionBase, self).__init__(config, layer, in_channels, kd_flag, num_agent)
+    def __init__(
+        self,
+        config,
+        layer=3,
+        in_channels=13,
+        kd_flag=True,
+        num_agent=5,
+        compress_level=0,
+    ):
+        super().__init__(config, layer, in_channels, kd_flag, num_agent, compress_level)
         self.num_agent = 0
 
     def fusion(self):
@@ -37,7 +45,14 @@ class FusionBase(IntermediateModelBase):
                 all_warp = trans_matrices[b, i]  # transformation [2 5 5 4 4]
 
                 super().build_neighbors_feature_list(
-                    b, i, all_warp, self.num_agent, local_com_mat, device, size
+                    b,
+                    i,
+                    all_warp,
+                    self.num_agent,
+                    local_com_mat,
+                    device,
+                    size,
+                    trans_matrices,
                 )
 
                 # feature update

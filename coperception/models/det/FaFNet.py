@@ -14,8 +14,16 @@ class FaFNet(NonIntermediateModelBase):
         num_agent (int, optional): The number of agents (including RSU). Defaults to 5.
     """
 
-    def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5):
-        super(FaFNet, self).__init__(config, layer, in_channels, kd_flag, num_agent)
+    def __init__(
+        self,
+        config,
+        layer=3,
+        in_channels=13,
+        kd_flag=True,
+        num_agent=5,
+        compress_level=0,
+    ):
+        super().__init__(config, layer, in_channels, kd_flag, num_agent, compress_level)
 
     def forward(self, bevs, maps=None, vis=None, batch_size=None):
         bevs = bevs.permute(0, 1, 4, 2, 3)  # (Batch, seq, z, h, w)

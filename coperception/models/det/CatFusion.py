@@ -7,8 +7,16 @@ from coperception.models.det.base import FusionBase
 class CatFusion(FusionBase):
     """Concatenate fusion. Used as a lower-bound in the DisoNet paper."""
 
-    def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5):
-        super(CatFusion, self).__init__(config, layer, in_channels, kd_flag, num_agent)
+    def __init__(
+        self,
+        config,
+        layer=3,
+        in_channels=13,
+        kd_flag=True,
+        num_agent=5,
+        compress_level=0,
+    ):
+        super().__init__(config, layer, in_channels, kd_flag, num_agent, compress_level)
         self._modulation_layer_3 = ModulationLayer3()
 
     def fusion(self):

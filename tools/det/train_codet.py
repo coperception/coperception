@@ -31,6 +31,7 @@ def main(args):
     num_workers = args.nworker
     start_epoch = 1
     batch_size = args.batch
+    compress_level = args.compress_level
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -84,11 +85,19 @@ def main(args):
 
     if args.com == "":
         model = FaFNet(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "when2com":
         model = When2com(
-            config, layer=args.layer, warp_flag=args.warp_flag, num_agent=num_agent
+            config,
+            layer=args.layer,
+            warp_flag=args.warp_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "v2v":
         model = V2VNet(
@@ -97,30 +106,39 @@ def main(args):
             layer=args.layer,
             layer_channel=256,
             num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "disco":
         model = DiscoNet(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "sum":
         model = SumFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "mean":
         model = MeanFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "max":
         model = MaxFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "cat":
         model = CatFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "agent":
         model = AgentWiseWeightedFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     else:
         raise NotImplementedError("Invalid argument com:" + args.com)
@@ -412,6 +430,13 @@ if __name__ == "__main__":
         type=str,
         help="The path to automatically reload the latest pth",
     )
+    parser.add_argument(
+        "--compress_level",
+        default=0,
+        type=int,
+        help="Compress the communication layer channels by 2**x times in encoder",
+    )
+
     torch.multiprocessing.set_sharing_strategy("file_system")
     args = parser.parse_args()
     print(args)
