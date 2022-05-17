@@ -3,11 +3,12 @@ import torch
 
 
 class FusionBase(SegModelBase):
-    def __init__(self, n_channels, n_classes, num_agent=5):
+    def __init__(self, n_channels, n_classes, num_agent=5, kd_flag=False):
         super().__init__(n_channels, n_classes, num_agent=num_agent)
         self.neighbor_feat_list = None
         self.tg_agent = None
         self.current_num_agent = None
+        self.kd_flag = kd_flag
 
     def fusion(self):
         raise NotImplementedError(
@@ -58,9 +59,13 @@ class FusionBase(SegModelBase):
         feat_mat = torch.cat(feat_list, 0)
 
         x5 = self.down4(feat_mat)
-        x = self.up1(x5, feat_mat)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
-        logits = self.outc(x)
-        return logits
+        x6 = self.up1(x5, feat_mat)
+        x7 = self.up2(x6, x3)
+        x8 = self.up3(x7, x2)
+        x9 = self.up4(x8, x1)
+        logits = self.outc(x9)
+
+        if self.kd_flag:
+            return logits, x9, x8, x7, x6, x5, feat_mat
+        else:
+            return logits
