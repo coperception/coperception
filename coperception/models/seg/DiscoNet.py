@@ -6,8 +6,16 @@ from coperception.models.seg.FusionBase import FusionBase
 
 
 class DiscoNet(FusionBase):
-    def __init__(self, n_channels, n_classes, num_agent, kd_flag=True):
-        super().__init__(n_channels, n_classes, num_agent, kd_flag=kd_flag)
+    def __init__(
+        self, n_channels, n_classes, num_agent, kd_flag=True, compress_level=0
+    ):
+        super().__init__(
+            n_channels,
+            n_classes,
+            num_agent,
+            kd_flag=kd_flag,
+            compress_level=compress_level,
+        )
         self.pixel_weighted_fusion = PixelWeightedFusionSoftmax(512)
 
     # def forward(self, x, trans_matrices, num_agent_tensor):

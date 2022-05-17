@@ -23,6 +23,7 @@ def main(config, args):
     need_log = args.log
     batch_size = args.batch
     num_workers = args.nworker
+    compress_level = args.compress_level
     start_epoch = 1
 
     # Specify gpu device
@@ -94,27 +95,65 @@ def main(config, args):
             n_classes=config.num_class,
             warp_flag=args.warp_flag,
             num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "v2v":
-        model = V2VNet(config.in_channels, config.num_class, num_agent=num_agent)
+        model = V2VNet(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+        )
     elif args.com == "mean":
-        model = MeanFusion(config.in_channels, config.num_class, num_agent=num_agent)
+        model = MeanFusion(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+        )
     elif args.com == "max":
-        model = MaxFusion(config.in_channels, config.num_class, num_agent=num_agent)
+        model = MaxFusion(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+        )
     elif args.com == "sum":
-        model = SumFusion(config.in_channels, config.num_class, num_agent=num_agent)
+        model = SumFusion(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+        )
     elif args.com == "agent":
         model = AgentWiseWeightedFusion(
-            config.in_channels, config.num_class, num_agent=num_agent
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "cat":
-        model = CatFusion(config.in_channels, config.num_class, num_agent=num_agent)
+        model = CatFusion(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+        )
     elif args.com == "disco":
         model = DiscoNet(
-            config.in_channels, config.num_class, num_agent=num_agent, kd_flag=True
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            kd_flag=True,
+            compress_level=compress_level,
         )
     else:
-        model = UNet(config.in_channels, config.num_class, num_agent=num_agent)
+        model = UNet(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+        )
     # model = nn.DataParallel(model)
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -338,6 +377,12 @@ if __name__ == "__main__":
         default="",
         type=str,
         help="The path to automatically reload the latest pth",
+    )
+    parser.add_argument(
+        "--compress_level",
+        default=0,
+        type=int,
+        help="Compress the communication layer channels by 2**x times in encoder",
     )
     torch.multiprocessing.set_sharing_strategy("file_system")
 

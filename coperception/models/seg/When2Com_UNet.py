@@ -22,8 +22,11 @@ class When2Com_UNet(SegModelBase):
         key_size=1024,
         query_size=32,
         num_agent=5,
+        compress_level=0,
     ):
-        super().__init__(in_channels, n_classes, num_agent=num_agent)
+        super().__init__(
+            in_channels, n_classes, num_agent=num_agent, compress_level=compress_level
+        )
         self.motion_state = config.motion_state
         if config.only_det:
             self.out_seq_len = 1
@@ -155,6 +158,11 @@ class When2Com_UNet(SegModelBase):
         x3 = self.down2(x2)
         x4 = self.down3(x3)  # b 512 32 32
         size = (1, 512, 32, 32)
+
+        if self.compress_level > 0:
+            x4 = F.relu(self.bn_compress(self.com_compresser(x4)))
+            x4 = F.relu(self.bn_decompress(self.com_decompresser(x4)))
+
         batch_size = bevs.size(0) // self.num_agent
         val_mat = torch.zeros(
             batch_size, self.num_agent, self.num_agent, 512, 32, 32

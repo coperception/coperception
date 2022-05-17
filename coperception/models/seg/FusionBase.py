@@ -1,10 +1,15 @@
 from coperception.models.seg.SegModelBase import SegModelBase
 import torch
+import torch.nn.functional as F
 
 
 class FusionBase(SegModelBase):
-    def __init__(self, n_channels, n_classes, num_agent=5, kd_flag=False):
-        super().__init__(n_channels, n_classes, num_agent=num_agent)
+    def __init__(
+        self, n_channels, n_classes, num_agent=5, kd_flag=False, compress_level=0
+    ):
+        super().__init__(
+            n_channels, n_classes, num_agent=num_agent, compress_level=compress_level
+        )
         self.neighbor_feat_list = None
         self.tg_agent = None
         self.current_num_agent = None
@@ -21,6 +26,10 @@ class FusionBase(SegModelBase):
         x3 = self.down2(x2)
         x4 = self.down3(x3)  # b 512 32 32
         size = (1, 512, 32, 32)
+
+        if self.compress_level > 0:
+            x4 = F.relu(self.bn_compress(self.com_compresser(x4)))
+            x4 = F.relu(self.bn_decompress(self.com_decompresser(x4)))
 
         batch_size = x.size(0) // self.num_agent
         feat_list = super().build_feat_list(x4, batch_size)
