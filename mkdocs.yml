@@ -12,11 +12,11 @@ nav:
     - index.md
     - getting_started/installation.md
     - Github Repo: https://github.com/coperception/coperception
-  - example programs:
-    - example_programs/index.md
-    - example_programs/det.md
-    - example_programs/seg.md
-    - example_programs/track.md
+  - tools:
+    - tools/index.md
+    - tools/det.md
+    - tools/seg.md
+    - tools/track.md
   - datasets:
     - datasets/v2x_sim.md
   - tutorials:
