@@ -12,7 +12,7 @@ class AgentWiseWeightedFusion(FusionBase):
 
     def fusion(self):
         agent_weight_list = list()
-        for k in range(self.current_num_agent):
+        for k in range(self.com_num_agent):
             cat_feat = torch.cat([self.tg_agent, self.neighbor_feat_list[k]], dim=0)
             cat_feat = cat_feat.unsqueeze(0)
             agent_weight = self.agent_weighted_fusion(cat_feat)
@@ -23,7 +23,7 @@ class AgentWiseWeightedFusion(FusionBase):
         )
 
         agent_wise_weight_feat = 0
-        for k in range(self.current_num_agent):
+        for k in range(self.com_num_agent):
             agent_wise_weight_feat = (
                 agent_wise_weight_feat
                 + soft_agent_weight_list[k] * self.neighbor_feat_list[k]

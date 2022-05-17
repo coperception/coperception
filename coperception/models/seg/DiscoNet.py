@@ -26,7 +26,7 @@ class DiscoNet(FusionBase):
         local_com_mat_update = torch.cat(tuple(feat_list), 1)
 
         for b in range(batch_size):
-            self.current_num_agent = num_agent_tensor[b, 0]
+            self.com_num_agent = num_agent_tensor[b, 0]
 
             agent_feat_list = list()
             for nb in range(self.num_agent):

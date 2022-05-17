@@ -29,20 +29,20 @@ class FusionBase(SegModelBase):
         local_com_mat_update = torch.cat(tuple(feat_list), 1)
 
         for b in range(batch_size):
-            self.current_num_agent = num_agent_tensor[b, 0]
+            self.com_num_agent = num_agent_tensor[b, 0]
 
             agent_feat_list = list()
-            for nb in range(self.current_num_agent):
+            for nb in range(self.com_num_agent):
                 agent_feat_list.append(local_com_mat[b, nb])
 
-            for i in range(self.current_num_agent):
+            for i in range(self.com_num_agent):
                 self.tg_agent = local_com_mat[b, i]
                 all_warp = trans_matrices[b, i]
 
                 self.neighbor_feat_list = list()
                 self.neighbor_feat_list.append(self.tg_agent)
 
-                for j in range(self.current_num_agent):
+                for j in range(self.com_num_agent):
                     if j != i:
                         self.neighbor_feat_list.append(
                             super().feature_transformation(
