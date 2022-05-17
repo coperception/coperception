@@ -39,10 +39,10 @@ make train_bound_nc bound=upperbound
 - V2VNet
 ```bash
 # V2V
-make train com=V2V
+make train com=v2v
 
 # V2V with no cross road (RSU) data
-make train_nc com=V2V
+make train_nc com=v2v
 ```
 
 - DiscoNet
