@@ -137,7 +137,6 @@ class Backbone(nn.Module):
         # compress x_3 (the layer that agents communicates on)
         if self.compress_level > 0:
             x_3 = F.relu(self.bn_compress(self.com_compresser(x_3)))
-            print(x_3.shape)
             x_3 = F.relu(self.bn_decompress(self.com_decompresser(x_3)))
 
         return [x, x_1, x_2, x_3, x_4]
