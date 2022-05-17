@@ -61,6 +61,9 @@ class DetModelBase(nn.Module):
         for i in range(self.agent_num):
             feat_list.append(feats[:, i, :, :, :])
         feat_mat = torch.cat(tuple(feat_list), 0)
+
+        feat_mat = torch.flip(feat_mat, (2,))
+
         return feat_mat
 
     def get_feature_maps_and_size(self, encoded_layers: list):
@@ -83,6 +86,7 @@ class DetModelBase(nn.Module):
         )
         size = size_tuple[self.layer]
 
+        feature_maps = torch.flip(feature_maps, (2,))
         return feature_maps, size
 
     def build_feature_list(self, batch_size: int, feat_maps) -> list:
@@ -131,7 +135,9 @@ class DetModelBase(nn.Module):
         )
 
     @staticmethod
-    def feature_transformation(b, j, local_com_mat, all_warp, device, size):
+    def feature_transformation(
+        b, j, agent_idx, local_com_mat, all_warp, device, size, trans_matrices
+    ):
         """Transform the features of the other agent (j) to the coordinate system of the current agent.
 
         Args:
@@ -145,44 +151,31 @@ class DetModelBase(nn.Module):
         Returns:
             A tensor of transformed features of agent j.
         """
-        nb_agent = torch.unsqueeze(local_com_mat[b, j], 0)  # [1 512 16 16]
-        nb_warp = all_warp[j]  # [4 4]
-        # normalize the translation vector
-        x_trans = (4 * nb_warp[0, 3]) / 128
-        y_trans = -(4 * nb_warp[1, 3]) / 128
+        nb_agent = torch.unsqueeze(local_com_mat[b, j], 0)
 
-        theta_rot = (
-            torch.tensor(
-                [
-                    [nb_warp[0, 0], nb_warp[0, 1], 0.0],
-                    [nb_warp[1, 0], nb_warp[1, 1], 0.0],
-                ]
-            )
-            .type(dtype=torch.float)
-            .to(device)
-        )
-        theta_rot = torch.unsqueeze(theta_rot, 0)
-        grid_rot = F.affine_grid(
-            theta_rot, size=torch.Size(size)
-        )  # get grid for grid sample
+        tfm_ji = trans_matrices[b, j, agent_idx]
+        M = (
+            torch.hstack((tfm_ji[:2, :2], -tfm_ji[:2, 3:4])).float().unsqueeze(0)
+        )  # [1,2,3]
 
-        theta_trans = (
-            torch.tensor([[1.0, 0.0, x_trans], [0.0, 1.0, y_trans]])
-            .type(dtype=torch.float)
-            .to(device)
-        )
-        theta_trans = torch.unsqueeze(theta_trans, 0)
-        grid_trans = F.affine_grid(
-            theta_trans, size=torch.Size(size)
-        )  # get grid for grid sample
+        mask = torch.tensor([[[1, 1, 4 / 128], [1, 1, 4 / 128]]], device=M.device)
 
-        # first rotate the feature map, then translate it
-        warp_feat_rot = F.grid_sample(nb_agent, grid_rot, mode="bilinear")
-        warp_feat_trans = F.grid_sample(warp_feat_rot, grid_trans, mode="bilinear")
-        return torch.squeeze(warp_feat_trans)
+        M *= mask
+
+        grid = F.affine_grid(M, size=torch.Size(size))
+        warp_feat = F.grid_sample(nb_agent, grid).squeeze()
+        return warp_feat
 
     def build_neighbors_feature_list(
-        self, b, agent_idx, all_warp, num_agent, local_com_mat, device, size
+        self,
+        b,
+        agent_idx,
+        all_warp,
+        num_agent,
+        local_com_mat,
+        device,
+        size,
+        trans_matrices,
     ) -> None:
         """Append the features of the neighbors of current agent to the neighbor_feat_list list.
 
@@ -198,8 +191,16 @@ class DetModelBase(nn.Module):
         for j in range(num_agent):
             if j != agent_idx:
                 warp_feat = DetModelBase.feature_transformation(
-                    b, j, local_com_mat, all_warp, device, size
+                    b,
+                    j,
+                    agent_idx,
+                    local_com_mat,
+                    all_warp,
+                    device,
+                    size,
+                    trans_matrices,
                 )
+
                 self.neighbor_feat_list.append(warp_feat)
 
     def get_decoded_layers(self, encoded_layers, feature_fuse_matrix, batch_size):

@@ -12,9 +12,22 @@ class V2VNet(IntermediateModelBase):
     """
 
     def __init__(
-        self, config, gnn_iter_times, layer, layer_channel, in_channels=13, num_agent=5
+        self,
+        config,
+        gnn_iter_times,
+        layer,
+        layer_channel,
+        in_channels=13,
+        num_agent=5,
+        compress_level=0,
     ):
-        super(V2VNet, self).__init__(config, layer, in_channels, num_agent=num_agent)
+        super().__init__(
+            config,
+            layer,
+            in_channels,
+            num_agent=num_agent,
+            compress_level=compress_level,
+        )
 
         self.layer_channel = layer_channel
         self.gnn_iter_num = gnn_iter_times
@@ -33,7 +46,7 @@ class V2VNet(IntermediateModelBase):
         # num_agent_tensor, shape: [batch, num_agent]; how many non-empty agent in this scene
 
         bevs = bevs.permute(0, 1, 4, 2, 3)  # (Batch, seq, z, h, w)
-        encoded_layers = self.u_encoder(bevs, requires_compression=False)
+        encoded_layers = self.u_encoder(bevs)
         device = bevs.device
 
         feat_maps, size = super().get_feature_maps_and_size(encoded_layers)
@@ -78,7 +91,14 @@ class V2VNet(IntermediateModelBase):
 
                     else:
                         super().build_neighbors_feature_list(
-                            b, i, all_warp, num_agent, local_com_mat, device, size
+                            b,
+                            i,
+                            all_warp,
+                            num_agent,
+                            local_com_mat,
+                            device,
+                            size,
+                            trans_matrices,
                         )
 
                         mean_feat = torch.mean(

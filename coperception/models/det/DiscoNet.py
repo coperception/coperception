@@ -18,8 +18,8 @@ class DiscoNet(IntermediateModelBase):
 
     """
 
-    def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5):
-        super(DiscoNet, self).__init__(config, layer, in_channels, kd_flag, num_agent)
+    def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5, compress_level=0):
+        super().__init__(config, layer, in_channels, kd_flag, num_agent, compress_level)
         if self.layer == 3:
             self.pixel_weighted_fusion = PixelWeightedFusionSoftmax(256)
         elif self.layer == 2:
@@ -69,7 +69,14 @@ class DiscoNet(IntermediateModelBase):
                     agent_wise_weight_feat = self.neighbor_feat_list[0]
                 else:
                     super().build_neighbors_feature_list(
-                        b, i, all_warp, num_agent, local_com_mat, device, size
+                        b,
+                        i,
+                        all_warp,
+                        num_agent,
+                        local_com_mat,
+                        device,
+                        size,
+                        trans_matrices,
                     )
 
                     # agent-wise weighted fusion

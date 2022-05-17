@@ -36,8 +36,15 @@ class When2com(IntermediateModelBase):
         key_size=1024,
         query_size=32,
         num_agent=5,
+        compress_level=0,
     ):
-        super(When2com, self).__init__(config, layer, in_channels, num_agent=num_agent)
+        super().__init__(
+            config,
+            layer,
+            in_channels,
+            num_agent=num_agent,
+            compress_level=compress_level,
+        )
 
         self.sparse = sparse
         self.key_size = key_size
@@ -179,14 +186,9 @@ class When2com(IntermediateModelBase):
                     batch_size, self.agent_num, self.agent_num, 128, 64, 64
                 ).to(device)
 
+        feat_maps = torch.flip(feat_maps, (2,))
         # get feat maps for each agent
-        feat_map = {}
-        feat_list = []
-        for i in range(self.agent_num):
-            feat_map[i] = torch.unsqueeze(
-                feat_maps[batch_size * i : batch_size * (i + 1)], 1
-            )
-            feat_list.append(feat_map[i])
+        feat_list = super().build_feature_list(batch_size, feat_maps)
 
         """""" """""" """""" """""" """""" """""" """""" """""" """""" """
          generate value matrix for each agent, Yiming, 2021.4.22
@@ -205,11 +207,16 @@ class When2com(IntermediateModelBase):
                         if j == i:
                             val_mat[b, i, j] = tg_agent
                         else:
-                            warp_feat_trans = super().feature_transformation(
-                                b, j, local_com_mat, all_warp, device, size
+                            warp_feat = super().feature_transformation(
+                                b,
+                                j,
+                                i,
+                                local_com_mat,
+                                all_warp,
+                                device,
+                                size,
+                                trans_matrices,
                             )
-                            warp_feat = torch.squeeze(warp_feat_trans)
-
                             val_mat[b, i, j] = warp_feat
         else:
             val_mat = torch.cat(tuple(feat_list), 1)
@@ -247,9 +254,9 @@ class When2com(IntermediateModelBase):
         feat_fuse, prob_action = self.attention_net(
             query_mat, key_mat, val_mat, sparse=self.sparse
         )
-        # print(query_mat.shape, key_mat.shape, val_mat.shape, feat_fuse.shape)
         # weighted feature maps is passed to decoder
         feat_fuse_mat = super().agents_to_batch(feat_fuse)
+
         if self.layer == 4:
             x = self.decoder(x, x_1, x_2, x_3, feat_fuse_mat, batch_size)[0]
         elif self.layer == 3:
