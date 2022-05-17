@@ -163,6 +163,10 @@ def main(config, args):
             trans_matrices = torch.stack(trans_matrices, 1)
             target_agent = torch.stack(target_agent, 1)
             num_sensor = torch.stack(num_sensor, 1)
+
+            if args.no_cross_road:
+                num_sensor -= 1
+
             data["trans_matrices"] = trans_matrices
             data["target_agent"] = target_agent
             data["num_sensor"] = num_sensor
