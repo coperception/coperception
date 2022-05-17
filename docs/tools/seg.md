@@ -2,7 +2,7 @@
 
 
 We implement lowerbound, upperbound, when2com, who2com, V2VNet as our benchmark segmentation methods. Please see more details in our paper.  
-You can find and configure all the arguments for the program in the `example/seg/Makefile` file.
+You can find and configure all the arguments for the program in the `tools/seg/Makefile` file.
 
 
 ## Preparation

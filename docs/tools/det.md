@@ -1,7 +1,7 @@
 # Detection
 
 We implement lowerbound, upperbound, when2com, who2com, V2VNet as our benchmark detectors.  
-You can find and configure all the arguments for the program in the `example/det/Makefile` file.
+You can find and configure all the arguments for the program in the `tools/det/Makefile` file.
 
 ## Preparation
 

@@ -11,6 +11,12 @@ Note that CoPerception is in its very early stages of development. If you find a
 - [Installation](/getting_started/installation)
 - [Github repository](https://github.com/coperception/coperception)
 
+## Tools
+- [Introduction](/tools)
+- [Detection](tools/det)
+- [Segmentation](tools/segmentation)
+- [Tracking](tools/track)
+
 ## Datasets
 - [V2X-Sim](/datasets/v2x_sim)
 
