@@ -20,7 +20,7 @@ testing_script := test_seg.py
 testring_data := $(create_data_save_path)/test
 # [lowerbound / upperbound]
 bound := lowerbound
-# [V2V / disco / when2com]
+# [v2v / disco / when2com]
 com := disco
 batch_size := 4
 # [train / test / val]

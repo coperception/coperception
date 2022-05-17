@@ -39,8 +39,8 @@ def main(config, args):
                 flag = "when2com_warp"
             else:
                 flag = "when2com"
-        elif args.com == "V2V":
-            flag = "V2V"
+        elif args.com == "v2v":
+            flag = "v2v"
         elif args.com == "mean":
             flag = "mean"
         elif args.com == "max":
@@ -95,7 +95,7 @@ def main(config, args):
             warp_flag=args.warp_flag,
             num_agent=num_agent,
         )
-    elif args.com == "V2V":
+    elif args.com == "v2v":
         model = V2VNet(config.in_channels, config.num_class, num_agent=num_agent)
     elif args.com == "mean":
         model = MeanFusion(config.in_channels, config.num_class, num_agent=num_agent)
