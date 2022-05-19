@@ -5,7 +5,7 @@ class TeacherNet(NonIntermediateModelBase):
     """The teacher net for knowledged distillation in DiscoNet."""
 
     def __init__(self, config):
-        super(TeacherNet, self).__init__(config)
+        super(TeacherNet, self).__init__(config, compress_level=0)
 
     def forward(self, bevs, maps=None, vis=None):
         bevs = bevs.permute(0, 1, 4, 2, 3)  # (Batch, seq, z, h, w)

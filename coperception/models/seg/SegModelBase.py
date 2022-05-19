@@ -25,9 +25,9 @@ class SegModelBase(nn.Module):
         self.up4 = Up(128, 64, bilinear)
         self.outc = OutConv(64, n_classes)
 
+        self.compress_level = compress_level
         if compress_level > 0:
             assert compress_level <= 9
-            self.compress_level = compress_level
             feat_map_channel_num = 512
             compress_channel_num = feat_map_channel_num // (2**compress_level)
 

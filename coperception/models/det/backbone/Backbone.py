@@ -70,9 +70,9 @@ class Backbone(nn.Module):
         self.bn8_1 = nn.BatchNorm2d(32)
         self.bn8_2 = nn.BatchNorm2d(32)
 
+        self.compress_level = compress_level
         if compress_level > 0:
             assert compress_level <= 8
-            self.compress_level = compress_level
             compress_channel_num = 256 // (2**compress_level)
 
             # currently only support compress/decompress at layer x_3
