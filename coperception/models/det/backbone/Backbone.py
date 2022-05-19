@@ -70,20 +70,21 @@ class Backbone(nn.Module):
         self.bn8_1 = nn.BatchNorm2d(32)
         self.bn8_2 = nn.BatchNorm2d(32)
 
-        assert compress_level >= 0 and compress_level <= 8
-        self.compress_level = compress_level
-        compress_channel_num = 256 // (2**compress_level)
+        if compress_level > 0:
+            assert compress_level <= 8
+            self.compress_level = compress_level
+            compress_channel_num = 256 // (2**compress_level)
 
-        # currently only support compress/decompress at layer x_3
-        self.com_compresser = nn.Conv2d(
-            256, compress_channel_num, kernel_size=1, stride=1
-        )
-        self.bn_compress = nn.BatchNorm2d(compress_channel_num)
+            # currently only support compress/decompress at layer x_3
+            self.com_compresser = nn.Conv2d(
+                256, compress_channel_num, kernel_size=1, stride=1
+            )
+            self.bn_compress = nn.BatchNorm2d(compress_channel_num)
 
-        self.com_decompresser = nn.Conv2d(
-            compress_channel_num, 256, kernel_size=1, stride=1
-        )
-        self.bn_decompress = nn.BatchNorm2d(256)
+            self.com_decompresser = nn.Conv2d(
+                compress_channel_num, 256, kernel_size=1, stride=1
+            )
+            self.bn_decompress = nn.BatchNorm2d(256)
 
     def encode(self, x):
         """Encode the input BEV features.

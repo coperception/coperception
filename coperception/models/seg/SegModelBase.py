@@ -25,20 +25,21 @@ class SegModelBase(nn.Module):
         self.up4 = Up(128, 64, bilinear)
         self.outc = OutConv(64, n_classes)
 
-        assert compress_level >= 0 and compress_level <= 9
-        self.compress_level = compress_level
-        feat_map_channel_num = 512
-        compress_channel_num = feat_map_channel_num // (2**compress_level)
+        if compress_level > 0:
+            assert compress_level <= 9
+            self.compress_level = compress_level
+            feat_map_channel_num = 512
+            compress_channel_num = feat_map_channel_num // (2**compress_level)
 
-        self.com_compresser = nn.Conv2d(
-            feat_map_channel_num, compress_channel_num, kernel_size=1, stride=1
-        )
-        self.bn_compress = nn.BatchNorm2d(compress_channel_num)
+            self.com_compresser = nn.Conv2d(
+                feat_map_channel_num, compress_channel_num, kernel_size=1, stride=1
+            )
+            self.bn_compress = nn.BatchNorm2d(compress_channel_num)
 
-        self.com_decompresser = nn.Conv2d(
-            compress_channel_num, feat_map_channel_num, kernel_size=1, stride=1
-        )
-        self.bn_decompress = nn.BatchNorm2d(feat_map_channel_num)
+            self.com_decompresser = nn.Conv2d(
+                compress_channel_num, feat_map_channel_num, kernel_size=1, stride=1
+            )
+            self.bn_decompress = nn.BatchNorm2d(feat_map_channel_num)
 
     def build_feat_list(self, feat_maps, batch_size):
         feat_maps = torch.flip(feat_maps, (2,))
