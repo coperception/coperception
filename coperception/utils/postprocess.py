@@ -79,8 +79,6 @@ def non_max_suppression(boxes, scores, threshold):
     if boxes.dtype.kind != "f":
         boxes = boxes.astype(np.float32)
 
-    polygons = convert_format(boxes)
-
     # Get indicies of boxes sorted by scores (highest first)
     # ixs = scores.argsort()[::-1][:top]
     fil_id = np.where(scores > 0.7)[0]
@@ -90,16 +88,17 @@ def non_max_suppression(boxes, scores, threshold):
     for i in range(len(fil_id)):
         ixs.append(fil_id[ixs_sort[i]])
 
-    # polygons = convert_format(boxes[ixs])
+    polygons = convert_format(boxes[ixs])
+    iter_ixs = [ii for ii in range(len(polygons))]
 
     pick = []
     # print('ori: ',len(ixs))
-    while len(ixs) > 0:
+    while len(iter_ixs) > 0:
         # Pick top box and add its index to the list
-        i = ixs[0]
-        pick.append(i)
+        i = iter_ixs[0]
+        pick.append(ixs[i])
         # Compute IoU of the picked box with the rest
-        iou = compute_iou(polygons[i], polygons[ixs[1:]])
+        iou = compute_iou(polygons[i], polygons[iter_ixs[1:]])
         # Identify boxes with IoU over the threshold. This
         # returns indices into ixs[1:], so add 1 to get
         # indices into ixs.
@@ -107,11 +106,10 @@ def non_max_suppression(boxes, scores, threshold):
         remove_ixs = np.where(iou > threshold)[0] + 1
 
         # Remove indices of the picked and overlapped boxes.
-        ixs = np.delete(ixs, remove_ixs)
-        ixs = np.delete(ixs, 0)
+        iter_ixs = np.delete(iter_ixs, remove_ixs)
+        iter_ixs = np.delete(iter_ixs, 0)
 
     print("selected: ", len(pick))
-
     return np.array(pick, dtype=np.int32)
 
 
