@@ -204,14 +204,12 @@ def main(args):
             break
 
     if not has_valid_pth:
-        print(f"No valid check point file in {auto_resume_path} dir, weights not loaded.")
+        print(
+            f"No valid check point file in {auto_resume_path} dir, weights not loaded."
+        )
         auto_resume_path = ""
 
-    if args.resume == "" and (
-        auto_resume_path == ""
-        or "epoch_1.pth"
-        not in os.listdir(os.path.join(auto_resume_path, f"{flag}/{cross_path}"))
-    ):
+    if args.resume == "" and auto_resume_path == "":
         log_file_name = os.path.join(model_save_path, "log.txt")
         saver = open(log_file_name, "w")
         saver.write("GPU number: {}\n".format(torch.cuda.device_count()))
