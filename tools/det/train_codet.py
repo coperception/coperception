@@ -32,6 +32,7 @@ def main(args):
     start_epoch = 1
     batch_size = args.batch
     compress_level = args.compress_level
+    auto_resume_path = args.auto_resume_path
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -126,19 +127,35 @@ def main(args):
         )
     elif args.com == "mean":
         model = MeanFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "max":
         model = MaxFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "cat":
         model = CatFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
         )
     elif args.com == "agent":
         model = AgentWiseWeightedFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
         )
     else:
         raise NotImplementedError("Invalid argument com:" + args.com)
@@ -179,10 +196,21 @@ def main(args):
     else:
         model_save_path = check_folder(os.path.join(model_save_path, "with_cross"))
 
+    # check if there is valid check point file
+    has_valid_pth = False
+    for pth_file in os.listdir(os.path.join(auto_resume_path, f"{flag}/{cross_path}")):
+        if pth_file.startswith("epoch_") and pth_file.endswith(".pth"):
+            has_valid_pth = True
+            break
+
+    if not has_valid_pth:
+        print(f"No valid check point file in {auto_resume_path} dir, weights not loaded.")
+        auto_resume_path = ""
+
     if args.resume == "" and (
-        args.auto_resume_path == ""
+        auto_resume_path == ""
         or "epoch_1.pth"
-        not in os.listdir(os.path.join(args.auto_resume_path, f"{flag}/{cross_path}"))
+        not in os.listdir(os.path.join(auto_resume_path, f"{flag}/{cross_path}"))
     ):
         log_file_name = os.path.join(model_save_path, "log.txt")
         saver = open(log_file_name, "w")
@@ -194,10 +222,8 @@ def main(args):
         saver.write(args.__repr__() + "\n\n")
         saver.flush()
     else:
-        if args.auto_resume_path != "":
-            model_save_path = os.path.join(
-                args.auto_resume_path, f"{flag}/{cross_path}"
-            )
+        if auto_resume_path != "":
+            model_save_path = os.path.join(auto_resume_path, f"{flag}/{cross_path}")
         else:
             model_save_path = args.resume[: args.resume.rfind("/")]
 
@@ -219,7 +245,7 @@ def main(args):
         saver.write(args.__repr__() + "\n\n")
         saver.flush()
 
-        if args.auto_resume_path != "":
+        if auto_resume_path != "":
             list_of_files = glob.glob(f"{model_save_path}/*.pth")
             latest_pth = max(list_of_files, key=os.path.getctime)
             checkpoint = torch.load(latest_pth)
