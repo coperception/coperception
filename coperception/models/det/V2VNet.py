@@ -40,6 +40,7 @@ class V2VNet(IntermediateModelBase):
             dilation=1,
             stride=1,
         )
+        self.compress_level = compress_level
 
     def forward(self, bevs, trans_matrices, num_agent_tensor, batch_size=1):
         # trans_matrices [batch 5 5 4 4]
@@ -54,17 +55,18 @@ class V2VNet(IntermediateModelBase):
         for b in range(batch_size):
             num_agent = num_agent_tensor[b, 0]
 
-            for _ in range(self.gnn_iter_num):
+            for gnn_iter_idx in range(self.gnn_iter_num):
 
-                # compress & decompress
-                feat_maps = F.relu(
-                    self.u_encoder.bn_compress(self.u_encoder.com_compresser(feat_maps))
-                )
-                feat_maps = F.relu(
-                    self.u_encoder.bn_decompress(
-                        self.u_encoder.com_decompresser(feat_maps)
+                # no compression in first iter time, because already compressed once
+                if self.compress_level > 0 and gnn_iter_idx > 0:
+                    feat_maps = F.relu(
+                        self.u_encoder.bn_compress(self.u_encoder.com_compresser(feat_maps))
                     )
-                )
+                    feat_maps = F.relu(
+                        self.u_encoder.bn_decompress(
+                            self.u_encoder.com_decompresser(feat_maps)
+                        )
+                    )
 
                 # get feat maps for each agent [10 512 16 16] -> [2 5 512 16 16]
                 feat_list = super().build_feature_list(batch_size, feat_maps)
