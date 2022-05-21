@@ -657,9 +657,7 @@ class FaFModule(object):
         # class_selected_global = apply_nms_global_scene(all_points_scene, cls_preds_scene)
 
         # global results with two NMS
-        global_boxes_af_local_nms = numpy.concatenate(
-            tuple(global_boxes_af_localnms), 0
-        )
+        global_boxes_af_local_nms = np.concatenate(tuple(global_boxes_af_localnms), 0)
         box_scores_af_local_nms = torch.cat(tuple(box_scores_af_localnms), 0)
         class_selected_global_af_local_nms = apply_nms_global_scene(
             global_boxes_af_local_nms, box_scores_af_local_nms

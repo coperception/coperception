@@ -12,6 +12,7 @@ from coperception.utils.CoDetModule import *
 from coperception.utils.loss import *
 from coperception.utils.mean_ap import eval_map
 from coperception.models.det import *
+from coperception.utils.detection_util import late_fusion
 
 
 def check_folder(folder_path):
@@ -26,6 +27,7 @@ def main(args):
 
     need_log = args.log
     num_workers = args.nworker
+    apply_late_fusion = args.apply_late_fusion
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -234,8 +236,15 @@ def main(args):
                 data, 1, num_agent=num_agent
             )
 
+        box_color_map = ["red", "yellow", "blue", "purple", "black", "orange"]
         # local qualitative evaluation
         for k in range(num_agent):
+            box_colors = None
+            if apply_late_fusion == 1 and len(result[k]) != 0:
+                pred_restore = result[k][0][0][0]["pred"]
+                score_restore = result[k][0][0][0]["score"]
+                selected_idx_restore = result[k][0][0][0]["selected_idx"]
+
             data_agents = {
                 "bev_seq": torch.unsqueeze(padded_voxel_points[k, :, :, :, :], 1),
                 "reg_targets": torch.unsqueeze(reg_target[k, :, :, :, :, :], 0),
@@ -247,6 +256,10 @@ def main(args):
                 data_agents["gt_max_iou"] = []
             else:
                 data_agents["gt_max_iou"] = temp[0]["gt_box"][0, :, :]
+
+            # late fusion
+            if apply_late_fusion == 1 and len(result[k]) != 0:
+                box_colors = late_fusion(k, num_agent, result, trans_matrices, box_color_map)
 
             result_temp = result[k]
 
@@ -270,7 +283,14 @@ def main(args):
             idx_save = str(idx) + ".png"
             temp_ = deepcopy(temp)
             if args.visualization:
-                visualization(config, temp, os.path.join(seq_save, idx_save))
+                visualization(
+                    config,
+                    temp,
+                    box_colors,
+                    box_color_map,
+                    apply_late_fusion,
+                    os.path.join(seq_save, idx_save),
+                )
 
             # # plot the cell-wise edge
             if flag == "disco":
@@ -317,6 +337,12 @@ def main(args):
                     det_file.flush()
 
                 det_file.close()
+
+            # restore data before late-fusion
+            if apply_late_fusion == 1 and len(result[k]) != 0:
+                result[k][0][0][0]["pred"] = pred_restore
+                result[k][0][0][0]["score"] = score_restore
+                result[k][0][0][0]["selected_idx"] = selected_idx_restore
 
         print("Validation scene {}, at frame {}".format(seq_name, idx))
         print("Takes {} s\n".format(str(time.time() - t)))
@@ -483,6 +509,12 @@ if __name__ == "__main__":
     # scene_batch => batch size in each scene
     parser.add_argument(
         "--num_agent", default=6, type=int, help="The total number of agents"
+    )
+    parser.add_argument(
+        "--apply_late_fusion",
+        default=0,
+        type=int,
+        help="1: apply late fusion. 0: no late fusion",
     )
     torch.multiprocessing.set_sharing_strategy("file_system")
     args = parser.parse_args()

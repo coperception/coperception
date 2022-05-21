@@ -3,6 +3,7 @@ import matplotlib
 import torch
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.patches as mpatches
 from coperception.utils.postprocess import *
 import torch.nn.functional as F
 from coperception.utils.obj_util import *
@@ -923,7 +924,56 @@ def get_det_corners(config, data, savename=None):
     return det_corners
 
 
-def visualization(config, data, savename=None):
+def late_fusion(ego_agent, num_agent, result, trans_matrices, box_color_map):
+    box_colors = np.array(
+        [box_color_map[ego_agent] for _ in result[ego_agent][0][0][0]["pred"]]
+    )
+
+    for j in range(num_agent):
+        if j == ego_agent or len(result[ego_agent]) == 0 or len(result[j]) == 0:
+            continue
+
+        trans_mat_j2ego = trans_matrices[0, ego_agent, j]
+
+        # remove z-axis
+        trans_mat_j2ego = np.delete(trans_mat_j2ego, 2, axis=1)
+        trans_mat_j2ego = np.delete(trans_mat_j2ego, 2, axis=0)
+
+        boxes_j = np.array(result[j][0][0][0]["pred"])  # [0][0][0] ==> squeeze
+        points = boxes_j.reshape(-1, 2).T
+        points[0, :] = -points[0, :]
+        points = np.dot(trans_mat_j2ego, np.vstack((points, np.ones(points.shape[1]))))[
+            :2, :
+        ]
+        points[0, :] = -points[0, :]
+        points = points.T.reshape(-1, 1, 4, 2)
+
+        result[ego_agent][0][0][0]["pred"] = np.vstack(
+            (result[ego_agent][0][0][0]["pred"], points)
+        )
+
+        result[ego_agent][0][0][0]["score"] = np.append(
+            result[ego_agent][0][0][0]["score"], result[j][0][0][0]["score"]
+        )
+        result[ego_agent][0][0][0]["selected_idx"] = np.append(
+            result[ego_agent][0][0][0]["selected_idx"],
+            result[j][0][0][0]["selected_idx"],
+        )
+        box_colors = np.append(box_colors, [box_color_map[j] for _ in points])
+
+    # nms
+    if len(result[ego_agent]) > 0:
+        boxes = np.squeeze(result[ego_agent][0][0][0]["pred"])
+        pick = non_max_suppression(boxes, result[ego_agent][0][0][0]["score"], 0.01)
+        result[ego_agent][0][0][0]["pred"] = np.take(
+            result[ego_agent][0][0][0]["pred"], pick, axis=0
+        )
+        box_colors = np.take(box_colors, pick, axis=0)
+
+    return box_colors
+
+
+def visualization(config, data, box_colors, box_color_map, apply_late_fusion, savename=None):
     voxel_size = config.voxel_size
     area_extents = config.area_extents
     # anchor_size = config.anchor_size
@@ -971,19 +1021,17 @@ def visualization(config, data, savename=None):
                 c_x, c_y = np.mean(corners, axis=0)
                 corners = np.concatenate([corners, corners[[0]]])
 
+                color = box_colors[corner_id] if apply_late_fusion == 1 else "red"
+
+                if apply_late_fusion == 1:
+                    legends = [mpatches.Patch(color=ii, label=f'Agent {idx}') for (idx, ii) in enumerate(box_color_map)]
+                    plt.legend(handles=legends, loc='center left', bbox_to_anchor=(1, 0.5))
+
                 if p == 0:
-                    if config.motion_state:
-                        if cls_pred_state[corner_id] == 0:
-                            color = "y"
-                        else:
-                            color = "r"
-                    else:
-                        color = "r"
                     plt.plot(
                         corners[:, 0], corners[:, 1], c=color, linewidth=0.8, zorder=15
                     )
                     plt.scatter(c_x, c_y, s=3, c=color, zorder=15)
-                    # plt.scatter(corners[0,0], corners[0,1], s=10,c = 'r')
                     plt.plot(
                         [c_x, (corners[-2][0] + corners[0][0]) / 2.0],
                         [c_y, (corners[-2][1] + corners[0][1]) / 2.0],
@@ -992,7 +1040,6 @@ def visualization(config, data, savename=None):
                         zorder=15,
                     )
                 else:
-                    color = "r"
                     if config.motion_state:
                         if cls_pred_state[corner_id] == 0:
                             continue
@@ -1073,7 +1120,6 @@ def visualization(config, data, savename=None):
     m3[m3 == 1] = 112 / 255
 
     m = np.stack([m1, m2, m3], axis=-1)
-    print(maps.shape)
 
     maps = (m * 255).astype(np.uint8)
     plt.imshow(maps, zorder=0)
