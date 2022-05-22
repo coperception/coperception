@@ -1237,5 +1237,19 @@ def classify_speed_level(
     return motion_cat
 
 
+def apply_pose_noise(pose_noise: float, trans_matrices):
+    """Apply pose noise to transformation matrices
+
+    Draw noise from normal distribution with mean of pose noise and std of 0.02,
+    apply to displacements of the transformation matrices.
+
+    Args:
+        pose_noise (float): the mean of pose noise drawn from normal distribution
+        trans_matrices (tensor): the transformation matrices
+    """
+    noise_mat = np.random.normal(pose_noise, 0.02, size=trans_matrices.shape)
+    trans_matrices[:, :, :, :3, 3] += noise_mat[:, :, :, :3, 3]
+
+
 if __name__ == "__main__":
     compute_ratio_cat_and_motion()

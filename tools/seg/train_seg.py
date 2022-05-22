@@ -13,6 +13,7 @@ from coperception.utils.SegModule import *
 from coperception.utils.loss import *
 from coperception.models.seg import *
 from coperception.utils.AverageMeter import AverageMeter
+from coperception.utils.data_util import apply_pose_noise
 import glob
 import os
 
@@ -25,6 +26,7 @@ def main(config, args):
     num_workers = args.nworker
     compress_level = args.compress_level
     start_epoch = 1
+    pose_noise = args.pose_noise
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -269,6 +271,10 @@ def main(config, args):
                     label_one_hot_list,
                 ) = list(zip(*sample))
 
+            # add pose noise
+            if pose_noise > 0:
+                apply_pose_noise(pose_noise, trans_matrices)
+
             if flag == "upperbound":
                 padded_voxel_points = torch.cat(
                     tuple(padded_voxel_points_teacher_list), 0
@@ -383,6 +389,12 @@ if __name__ == "__main__":
         default=0,
         type=int,
         help="Compress the communication layer channels by 2**x times in encoder",
+    )
+    parser.add_argument(
+        "--pose_noise",
+        default=0,
+        type=float,
+        help="draw noise from normal distribution with given mean (in meters), apply to transformation matrix.",
     )
     torch.multiprocessing.set_sharing_strategy("file_system")
 

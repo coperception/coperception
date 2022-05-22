@@ -11,6 +11,7 @@ from coperception.utils.CoDetModule import *
 from coperception.utils.loss import *
 from coperception.models.det import *
 from coperception.utils import AverageMeter
+from coperception.utils.data_util import apply_pose_noise
 
 import glob
 import os
@@ -33,6 +34,7 @@ def main(args):
     batch_size = args.batch
     compress_level = args.compress_level
     auto_resume_path = args.auto_resume_path
+    pose_noise = args.pose_noise
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -294,6 +296,10 @@ def main(args):
             target_agent_id = torch.stack(tuple(target_agent_id_list), 1)
             num_all_agents = torch.stack(tuple(num_agent_list), 1)
 
+            # add pose noise
+            if pose_noise > 0:
+                apply_pose_noise(pose_noise, trans_matrices)
+
             if args.no_cross_road:
                 num_all_agents -= 1
 
@@ -459,6 +465,12 @@ if __name__ == "__main__":
         default=0,
         type=int,
         help="Compress the communication layer channels by 2**x times in encoder",
+    )
+    parser.add_argument(
+        "--pose_noise",
+        default=0,
+        type=float,
+        help="draw noise from normal distribution with given mean (in meters), apply to transformation matrix.",
     )
 
     torch.multiprocessing.set_sharing_strategy("file_system")

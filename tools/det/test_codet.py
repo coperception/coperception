@@ -13,6 +13,7 @@ from coperception.utils.loss import *
 from coperception.utils.mean_ap import eval_map
 from coperception.models.det import *
 from coperception.utils.detection_util import late_fusion
+from coperception.utils.data_util import apply_pose_noise
 
 
 def check_folder(folder_path):
@@ -28,6 +29,7 @@ def main(args):
     need_log = args.log
     num_workers = args.nworker
     apply_late_fusion = args.apply_late_fusion
+    pose_noise = args.pose_noise
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -193,6 +195,10 @@ def main(args):
         target_agent_ids = torch.stack(tuple(target_agent_id_list), 1)
         num_all_agents = torch.stack(tuple(num_agent_list), 1)
 
+        # add pose noise
+        if pose_noise > 0:
+            apply_pose_noise(pose_noise, trans_matrices)
+
         if args.no_cross_road:
             num_all_agents -= 1
 
@@ -259,7 +265,9 @@ def main(args):
 
             # late fusion
             if apply_late_fusion == 1 and len(result[k]) != 0:
-                box_colors = late_fusion(k, num_agent, result, trans_matrices, box_color_map)
+                box_colors = late_fusion(
+                    k, num_agent, result, trans_matrices, box_color_map
+                )
 
             result_temp = result[k]
 
@@ -515,6 +523,12 @@ if __name__ == "__main__":
         default=0,
         type=int,
         help="1: apply late fusion. 0: no late fusion",
+    )
+    parser.add_argument(
+        "--pose_noise",
+        default=0,
+        type=float,
+        help="draw noise from normal distribution with given mean (in meters), apply to transformation matrix.",
     )
     torch.multiprocessing.set_sharing_strategy("file_system")
     args = parser.parse_args()
