@@ -1,6 +1,5 @@
 from nuscenes.nuscenes import NuScenes
 import os
-from nuscenes.utils.data_classes import LidarPointCloud
 import numpy as np
 import torch
 import argparse
@@ -8,6 +7,7 @@ import argparse
 from coperception.utils.obj_util import *
 from coperception.configs import Config, ConfigGlobal
 from coperception.datasets import V2XSimDet
+from coperception.utils.nuscenes_pc_util import get_instance_boxes_multisweep_sample_data
 
 
 def get_gt_corners(config, data):
@@ -175,7 +175,7 @@ def create_data(
                     _,
                     _,
                     _,
-                ) = LidarPointCloud.get_instance_boxes_multisweep_sample_data(
+                ) = get_instance_boxes_multisweep_sample_data(
                     nusc,
                     sample_data,
                     instance_token,

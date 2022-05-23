@@ -1,7 +1,7 @@
-from nuscenes.utils.data_classes import LidarPointCloud
+from nuscenes.utils.data_classes import LidarPointCloud, Box
 import numpy as np
 from functools import reduce
-from typing import Dict
+from typing import Tuple, List, Dict
 from nuscenes import NuScenes
 from nuscenes.utils.geometry_utils import transform_matrix
 from pyquaternion import Quaternion
@@ -258,3 +258,189 @@ def from_file_multisweep_warp2com_sample_data(
         )
     else:
         return current_pc, np.squeeze(all_times, 0), target_agent_id, num_sensor
+
+def get_ann_of_instance(nusc: "NuScenes", sample_rec: Dict, instance_token: str) -> str:
+        """
+        Return the annotations within the sample which match the given instance.
+        :param sample_rec: The given sample record.
+        :param instance_token: The instance which need to be matched.
+        :return: The annotation which matches the instance.
+        """
+        sd_anns = sample_rec['anns']
+        instance_ann_token = None
+        cnt = 0
+
+        for ann_token in sd_anns:
+            tmp_ann_rec = nusc.get('sample_annotation', ann_token)
+            tmp_instance_token = tmp_ann_rec['instance_token']
+
+            if instance_token == tmp_instance_token:
+                instance_ann_token = ann_token
+                cnt += 1
+
+        assert cnt <= 1, 'One instance cannot associate more than 1 annotations.'
+
+        if cnt == 1:
+            return instance_ann_token
+        else:
+            return ""
+
+def get_instance_box(nusc: "NuScenes", sample_data_token: str, instance_token: str):
+        """
+        Get the bounding box associated with the given instance in the sample data.
+        :param sample_data_token: The sample data identifier at a certain time stamp.
+        :param instance_token: The queried instance.
+        :return: The bounding box associated with the instance.
+        """
+        # Retrieve sensor & pose records
+        sd_record = nusc.get('sample_data', sample_data_token)
+        curr_sample_record = nusc.get('sample', sd_record['sample_token'])
+
+        instance_ann_token = get_ann_of_instance(nusc, curr_sample_record, instance_token)
+        if instance_ann_token == "":
+            return None, None, None
+
+        sample_ann_rec = nusc.get('sample_annotation', instance_ann_token)
+
+        # Get the attribute of this annotation
+        if len(sample_ann_rec['attribute_tokens']) != 0:
+            attr = nusc.get('attribute', sample_ann_rec['attribute_tokens'][0])['name']
+        else:
+            attr = None
+
+        # Get the category of this annotation
+        cat = sample_ann_rec['category_name']
+
+        if curr_sample_record['prev'] == "" or sd_record['is_key_frame']:
+            # If no previous annotations available, or if sample_data is keyframe just return the current ones.
+            box = nusc.get_box(instance_ann_token)
+
+        else:
+            prev_sample_record = nusc.get('sample', curr_sample_record['prev'])
+
+            curr_ann_rec = nusc.get('sample_annotation', instance_ann_token)
+            prev_ann_recs = [nusc.get('sample_annotation', token) for token in prev_sample_record['anns']]
+
+            # Maps instance tokens to prev_ann records
+            prev_inst_map = {entry['instance_token']: entry for entry in prev_ann_recs}
+
+            t0 = prev_sample_record['timestamp']
+            t1 = curr_sample_record['timestamp']
+            t = sd_record['timestamp']
+
+            # There are rare situations where the timestamps in the DB are off so ensure that t0 < t < t1.
+            t = max(t0, min(t1, t))
+
+            if instance_token in prev_inst_map:
+                # If the annotated instance existed in the previous frame, interpolate center & orientation.
+                prev_ann_rec = prev_inst_map[instance_token]
+
+                # Interpolate center.
+                center = [np.interp(t, [t0, t1], [c0, c1]) for c0, c1 in zip(prev_ann_rec['translation'],
+                                                                             curr_ann_rec['translation'])]
+
+                # Interpolate orientation.
+                rotation = Quaternion.slerp(q0=Quaternion(prev_ann_rec['rotation']),
+                                            q1=Quaternion(curr_ann_rec['rotation']),
+                                            amount=(t - t0) / (t1 - t0))
+
+                box = Box(center, curr_ann_rec['size'], rotation, name=curr_ann_rec['category_name'],
+                          token=curr_ann_rec['token'])
+            else:
+                # If not, simply grab the current annotation.
+                box = nusc.get_box(curr_ann_rec['token'])
+
+        return box, attr, cat
+
+def get_instance_boxes_multisweep_sample_data(nusc: 'NuScenes',
+                                                ref_sd_rec: Dict,
+                                                instance_token: str,
+                                                nsweeps_back: int = 5,
+                                                nsweeps_forward: int = 5) -> \
+        Tuple[List['Box'], np.array, List[str], List[str]]:
+    """
+    Return the bounding boxes associated with the given instance. The bounding boxes are across different sweeps.
+    For each bounding box, we need to map its (global) coordinates to the reference frame.
+    For this function, the reference sweep is supposed to be from sample data record (not sample. ie, keyframe).
+    :param nusc: A NuScenes instance.
+    :param ref_sd_rec: The current sample data record.
+    :param instance_token: The current selected instance.
+    :param nsweeps_back: Number of sweeps to aggregate. The sweeps trace back.
+    :param nsweeps_forward: Number of sweeps to aggregate. The sweeps are obtained from the future.
+    :return: (list of bounding boxes, the time stamps of bounding boxes, attribute list, category list)
+    """
+
+    # Init
+    box_list = list()
+    all_times = list()
+    attr_list = list()  # attribute list
+    cat_list = list()  # category list
+
+    # Get reference pose and timestamp
+    ref_pose_rec = nusc.get('ego_pose', ref_sd_rec['ego_pose_token'])
+    ref_cs_rec = nusc.get('calibrated_sensor', ref_sd_rec['calibrated_sensor_token'])
+    ref_time = 1e-6 * ref_sd_rec['timestamp']
+
+    # Get the bounding boxes across different sweeps
+    boxes = list()
+
+    # Move backward to get the past annotations
+    current_sd_rec = ref_sd_rec
+    for _ in range(nsweeps_back):
+        box, attr, cat = get_instance_box(nusc, current_sd_rec['token'], instance_token)
+        boxes.append(box)  # It is possible the returned box is None
+        attr_list.append(attr)
+        cat_list.append(cat)
+
+        time_lag = ref_time - 1e-6 * current_sd_rec['timestamp']  # positive difference
+        all_times.append(time_lag)
+
+        if current_sd_rec['prev'] == '':
+            break
+        else:
+            current_sd_rec = nusc.get('sample_data', current_sd_rec['prev'])
+
+    # Move forward to get the future annotations
+    current_sd_rec = ref_sd_rec
+
+    # Abort if there are no future sweeps.
+    if current_sd_rec['next'] != '':
+        current_sd_rec = nusc.get('sample_data', current_sd_rec['next'])
+
+        for _ in range(nsweeps_forward):
+            box, attr, cat = get_instance_box(nusc, current_sd_rec['token'], instance_token)
+            boxes.append(box)  # It is possible the returned box is None
+            attr_list.append(attr)
+            cat_list.append(cat)
+
+            time_lag = ref_time - 1e-6 * current_sd_rec['timestamp']  # negative difference
+            all_times.append(time_lag)
+
+            if current_sd_rec['next'] == '':
+                break
+            else:
+                current_sd_rec = nusc.get('sample_data', current_sd_rec['next'])
+
+    # Map the bounding boxes to the local sensor coordinate
+    for box in boxes:
+        if box is not None:
+            # Move box to ego vehicle coord system
+            box.translate(-np.array(ref_pose_rec['translation']))
+            box.rotate(Quaternion(ref_pose_rec['rotation']).inverse)
+
+            # Move box to sensor coord system
+            box.translate(-np.array(ref_cs_rec['translation']))
+            box.rotate(Quaternion(ref_cs_rec['rotation']).inverse)
+
+            # caused by coordinate inconsistency of nuscene-toolkit
+            box.center[0] = - box.center[0]
+
+            # debug
+            shift = [box.center[0], box.center[1], box.center[2]]
+            box.translate(-np.array(shift))
+            box.rotate(Quaternion([0, 1, 0, 0]).inverse)
+            box.translate(np.array(shift))
+
+        box_list.append(box)
+    #print(temp)
+    return box_list, all_times, attr_list, cat_list
