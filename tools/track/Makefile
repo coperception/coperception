@@ -1,7 +1,7 @@
 # Path to the original V2X-Sim dataset
 original_data_path := /scratch/dm4524/data/V2X-Sim-2
 # Path to the dataset for detection
-det_data_path := /scratch/dm4524/data/V2X-Sim-det/
+det_data_path := /scratch/dm4524/data/V2X-Sim-det
 # [lowerbound / upperbound/ v2v / disco / when2com / when2com_warp / who2com / who2com_warp]
 mode := disco
 # [with_cross / no_cross]  with_cross ==> with RSU; no_cross ==> no RSU
