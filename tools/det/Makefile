@@ -37,7 +37,7 @@ compress_level := 0
 apply_late_fusion := 0
 # 1: do visualizaton. 0: no visualization
 visualization := 0
-# pose_noise in cm
+# pose_noise in meters
 pose_noise := 0
 
 create_data:
