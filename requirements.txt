@@ -3,7 +3,7 @@ torch
 opencv-python
 torchvision
 typing
-nuscenes-devkit
+nuscenes-devkit==1.0.9
 pyquaternion
 numba
 matplotlib
