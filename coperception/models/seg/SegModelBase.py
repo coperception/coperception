@@ -56,12 +56,14 @@ class SegModelBase(nn.Module):
 
     @staticmethod
     def feature_transformation(b, j, agent_idx, local_com_mat, size, trans_matrices):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         nb_agent = torch.unsqueeze(local_com_mat[b, j], 0)
 
         tfm_ji = trans_matrices[b, j, agent_idx]
         M = (
             torch.hstack((tfm_ji[:2, :2], -tfm_ji[:2, 3:4])).float().unsqueeze(0)
         )  # [1,2,3]
+        M = M.to(device)
 
         mask = torch.tensor([[[1, 1, 4 / 128], [1, 1, 4 / 128]]], device=M.device)
 
