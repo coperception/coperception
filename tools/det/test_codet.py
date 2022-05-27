@@ -21,7 +21,7 @@ def check_folder(folder_path):
         os.mkdir(folder_path)
     return folder_path
 
-
+@torch.no_grad()
 def main(args):
     config = Config("train", binary=True, only_det=True)
     config_global = ConfigGlobal("train", binary=True, only_det=True)
@@ -30,6 +30,7 @@ def main(args):
     num_workers = args.nworker
     apply_late_fusion = args.apply_late_fusion
     pose_noise = args.pose_noise
+    compress_level = args.compress_level
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -85,31 +86,31 @@ def main(args):
     elif flag.startswith("when2com") or flag.startswith("who2com"):
         # model = PixelwiseWeightedFusionSoftmax(config, layer=args.layer)
         model = When2com(
-            config, layer=args.layer, warp_flag=args.warp_flag, num_agent=num_agent
+            config, layer=args.layer, warp_flag=args.warp_flag, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "disco":
         model = DiscoNet(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "sum":
         model = SumFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "mean":
         model = MeanFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "max":
         model = MaxFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "cat":
         model = CatFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "agent":
         model = AgentWiseWeightedFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent
+            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
         )
     else:
         model = V2VNet(
@@ -118,6 +119,7 @@ def main(args):
             layer=args.layer,
             layer_channel=256,
             num_agent=num_agent,
+            compress_level=compress_level,
         )
 
     model = nn.DataParallel(model)
@@ -301,16 +303,16 @@ def main(args):
                 )
 
             # # plot the cell-wise edge
-            if flag == "disco":
-                one_agent_edge = save_agent_weight_list[k]
-                for kk in range(len(one_agent_edge)):
-                    idx_edge_save = (
-                        str(idx) + "_edge_" + str(kk) + "_to_" + str(k) + ".png"
-                    )
-                    savename_edge = os.path.join(seq_save, idx_edge_save)
-                    sns.set()
-                    plt.savefig(savename_edge, dpi=500)
-                    plt.close(0)
+            # if flag == "disco" and k < len(save_agent_weight_list):
+            #     one_agent_edge = save_agent_weight_list[k]
+            #     for kk in range(len(one_agent_edge)):
+            #         idx_edge_save = (
+            #             str(idx) + "_edge_" + str(kk) + "_to_" + str(k) + ".png"
+            #         )
+            #         savename_edge = os.path.join(seq_save, idx_edge_save)
+            #         sns.set()
+            #         plt.savefig(savename_edge, dpi=500)
+            #         plt.close(0)
 
             # == tracking ==
             if args.tracking:
@@ -498,7 +500,7 @@ if __name__ == "__main__":
         help="Number of message passing for V2VNet",
     )
     parser.add_argument(
-        "--visualization", default=True, help="Visualize validation result"
+        "--visualization", type=int, default=0, help="Visualize validation result"
     )
     parser.add_argument(
         "--com", default="", type=str, help="disco/when2com/v2v/sum/mean/max/cat/agent"
@@ -523,6 +525,12 @@ if __name__ == "__main__":
         default=0,
         type=int,
         help="1: apply late fusion. 0: no late fusion",
+    )
+    parser.add_argument(
+        "--compress_level",
+        default=0,
+        type=int,
+        help="Compress the communication layer channels by 2**x times in encoder",
     )
     parser.add_argument(
         "--pose_noise",

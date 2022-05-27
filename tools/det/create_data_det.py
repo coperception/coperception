@@ -9,9 +9,11 @@ from coperception.utils.obj_util import *
 from coperception.utils.nuscenes_pc_util import (
     from_file_multisweep_upperbound_sample_data,
     from_file_multisweep_warp2com_sample_data,
+    get_instance_boxes_multisweep_sample_data
 )
 from nuscenes import NuScenes
 from nuscenes.utils.data_classes import LidarPointCloud
+
 
 
 def check_folder(folder_name):
@@ -156,7 +158,7 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
                     instance_all_times,
                     _,
                     _,
-                ) = LidarPointCloud.get_instance_boxes_multisweep_sample_data(
+                ) = get_instance_boxes_multisweep_sample_data(
                     nusc,
                     curr_sample_data,
                     instance_token,
