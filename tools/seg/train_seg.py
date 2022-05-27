@@ -271,10 +271,6 @@ def main(config, args):
                     label_one_hot_list,
                 ) = list(zip(*sample))
 
-            # add pose noise
-            if pose_noise > 0:
-                apply_pose_noise(pose_noise, trans_matrices)
-
             if flag == "upperbound":
                 padded_voxel_points = torch.cat(
                     tuple(padded_voxel_points_teacher_list), 0
@@ -291,6 +287,9 @@ def main(config, args):
             data["labels"] = label_one_hot.to(device)
             if args.com:
                 trans_matrices = torch.stack(trans_matrices, 1)
+                # add pose noise
+                if pose_noise > 0:
+                    apply_pose_noise(pose_noise, trans_matrices)
                 target_agent = torch.stack(target_agent, 1)
                 num_sensor = torch.stack(num_sensor, 1)
                 data["trans_matrices"] = trans_matrices.to(device)
