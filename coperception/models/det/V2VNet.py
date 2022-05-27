@@ -20,6 +20,7 @@ class V2VNet(IntermediateModelBase):
         in_channels=13,
         num_agent=5,
         compress_level=0,
+        only_v2i=False,
     ):
         super().__init__(
             config,
@@ -27,6 +28,7 @@ class V2VNet(IntermediateModelBase):
             in_channels,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
 
         self.layer_channel = layer_channel

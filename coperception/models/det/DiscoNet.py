@@ -18,8 +18,8 @@ class DiscoNet(IntermediateModelBase):
 
     """
 
-    def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5, compress_level=0):
-        super().__init__(config, layer, in_channels, kd_flag, num_agent, compress_level)
+    def __init__(self, config, layer=3, in_channels=13, kd_flag=True, num_agent=5, compress_level=0, only_v2i=False):
+        super().__init__(config, layer, in_channels, kd_flag, num_agent, compress_level, only_v2i)
         if self.layer == 3:
             self.pixel_weighted_fusion = PixelWeightedFusionSoftmax(256)
         elif self.layer == 2:

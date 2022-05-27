@@ -37,6 +37,7 @@ class When2com(IntermediateModelBase):
         query_size=32,
         num_agent=5,
         compress_level=0,
+        only_v2i=False,
     ):
         super().__init__(
             config,
@@ -44,6 +45,7 @@ class When2com(IntermediateModelBase):
             in_channels,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i
         )
 
         self.sparse = sparse
@@ -201,6 +203,10 @@ class When2com(IntermediateModelBase):
             for b in range(batch_size):
                 num_agent = num_agent_tensor[b, 0]
                 for i in range(num_agent):
+                    if self.only_v2i and i != 0 and j != 0:
+                        val_mat[b, i, j] = local_com_mat[b, j]
+                        continue
+
                     tg_agent = local_com_mat[b, i]
                     all_warp = trans_matrices[b, i]  # transformation [2 5 5 4 4]
                     for j in range(num_agent):

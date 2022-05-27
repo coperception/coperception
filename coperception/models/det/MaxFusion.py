@@ -13,8 +13,9 @@ class MaxFusion(FusionBase):
         kd_flag=True,
         num_agent=5,
         compress_level=0,
+        only_v2i=False,
     ):
-        super().__init__(config, layer, in_channels, kd_flag, num_agent, compress_level)
+        super().__init__(config, layer, in_channels, kd_flag, num_agent, compress_level, only_v2i)
 
     def fusion(self):
         return torch.max(torch.stack(self.neighbor_feat_list), dim=0).values

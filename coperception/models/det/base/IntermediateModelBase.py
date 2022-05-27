@@ -18,7 +18,8 @@ class IntermediateModelBase(DetModelBase):
         kd_flag=True,
         num_agent=5,
         compress_level=0,
+        only_v2i=False,
     ):
-        super().__init__(config, layer, in_channels, kd_flag, num_agent=num_agent)
+        super().__init__(config, layer, in_channels, kd_flag, num_agent=num_agent, only_v2i=only_v2i)
         self.u_encoder = LidarEncoder(in_channels, compress_level)
         self.decoder = LidarDecoder(height_feat_size=in_channels)

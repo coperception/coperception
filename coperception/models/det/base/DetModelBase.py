@@ -30,6 +30,7 @@ class DetModelBase(nn.Module):
         kd_flag=True,
         p_com_outage=0.0,
         num_agent=5,
+        only_v2i=False
     ):
         super(DetModelBase, self).__init__()
 
@@ -47,6 +48,7 @@ class DetModelBase(nn.Module):
         self.p_com_outage = p_com_outage
         self.neighbor_feat_list = []
         self.tg_agent = None
+        self.only_v2i = only_v2i
 
     def agents_to_batch(self, feats):
         """Concatenate the features of all agents back into a bacth.
@@ -189,6 +191,10 @@ class DetModelBase(nn.Module):
             size (tuple): Size of the feature map.
         """
         for j in range(num_agent):
+            if self.only_v2i and agent_idx != 0 and j != 0:
+                self.neighbor_feat_list.append(local_com_mat[b, j])
+                continue
+
             if j != agent_idx:
                 warp_feat = DetModelBase.feature_transformation(
                     b,

@@ -483,7 +483,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--only_v2i",
-        default=1,
+        default=0,
         type=int,
         help="1: only v2i, 0: v2v and v2i",
     )
