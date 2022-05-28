@@ -78,16 +78,16 @@ test_nc:
 	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com $(com) --resume $(log_base)/$(com)/no_cross/epoch_$(epoch_num).pth --no_cross_road --logpath $(log_base)
 
 test_w:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com/with_cross/epoch_$(epoch_num).pth --inference $(inference)
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com/with_cross/epoch_$(epoch_num).pth --inference $(inference) --logpath $(log_base)
 
 test_w_nc:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com/with_cross/epoch_$(epoch_num).pth --inference $(inference) --no_cross_road
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com/with_cross/epoch_$(epoch_num).pth --inference $(inference) --no_cross_road --logpath $(log_base)
 
 test_warp:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com_warp/with_cross/epoch_$(epoch_num).pth --warp_flag --inference $(inference)
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com_warp/with_cross/epoch_$(epoch_num).pth --warp_flag --inference $(inference) --logpath $(log_base)
 
 test_warp_nc:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com_warp/no_cross/epoch_$(epoch_num).pth --warp_flag --no_cross_road --inference $(inference)
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com_warp/no_cross/epoch_$(epoch_num).pth --warp_flag --no_cross_road --inference $(inference) --logpath $(log_base)
 
 visualize:
 	python visualizer.py --split $(split) --agent_idx $(agent_idx)
