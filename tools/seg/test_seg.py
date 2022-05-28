@@ -21,13 +21,14 @@ def check_folder(folder_path):
         os.mkdir(folder_path)
     return folder_path
 
-
+@torch.no_grad()
 def main(config, args):
     config.nepoch = args.nepoch
     batch_size = args.batch
     num_workers = args.nworker
     logpath = args.logpath
     pose_noise = args.pose_noise
+    compress_level = args.compress_level
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -93,27 +94,28 @@ def main(config, args):
             n_classes=config.num_class,
             warp_flag=args.warp_flag,
             num_agent=num_agent,
+            compress_level=compress_level
         )
     elif args.com == "v2v":
-        model = V2VNet(config.in_channels, config.num_class, num_agent=num_agent)
+        model = V2VNet(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
     elif args.com == "mean":
-        model = MeanFusion(config.in_channels, config.num_class, num_agent=num_agent)
+        model = MeanFusion(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
     elif args.com == "max":
-        model = MaxFusion(config.in_channels, config.num_class, num_agent=num_agent)
+        model = MaxFusion(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
     elif args.com == "sum":
-        model = SumFusion(config.in_channels, config.num_class, num_agent=num_agent)
+        model = SumFusion(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
     elif args.com == "cat":
-        model = CatFusion(config.in_channels, config.num_class, num_agent=num_agent)
+        model = CatFusion(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
     elif args.com == "agent":
         model = AgentWiseWeightedFusion(
-            config.in_channels, config.num_class, num_agent=num_agent
+            config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level
         )
     elif args.com == "disco":
         model = DiscoNet(
-            config.in_channels, config.num_class, num_agent=num_agent, kd_flag=False
+            config.in_channels, config.num_class, num_agent=num_agent, kd_flag=False, compress_level=compress_level
         )
     else:
-        model = UNet(config.in_channels, config.num_class, num_agent=num_agent)
+        model = UNet(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
     # model = nn.DataParallel(model)
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -172,12 +174,41 @@ def main(config, args):
             if args.no_cross_road:
                 num_sensor -= 1
 
-            data["trans_matrices"] = trans_matrices
-            data["target_agent"] = target_agent
-            data["num_sensor"] = num_sensor
+            data["trans_matrices"] = trans_matrices.to(device)
+            data["target_agent"] = target_agent.to(device)
+            data["num_sensor"] = num_sensor.to(device)
 
         pred, labels = segmodule.step(data, num_agent, batch_size, loss=False)
         labels = labels.detach().cpu().numpy().astype(np.int32)
+
+
+        # late fusion
+        if args.apply_late_fusion:
+            pred = torch.flip(pred, (2,))
+            size = (1, *pred[0].shape)
+
+            for ii in range(num_sensor[0, 0]):
+                for jj in range(num_sensor[0, 0]):
+                    if ii == jj:
+                        continue
+
+                    nb_agent = torch.unsqueeze(pred[jj], 0)
+                    tfm_ji = trans_matrices[0, jj, ii]
+                    M = (
+                        torch.hstack((tfm_ji[:2, :2], -tfm_ji[:2, 3:4])).float().unsqueeze(0)
+                    )  # [1,2,3]
+
+                    mask = torch.tensor([[[1, 1, 4 / 128], [1, 1, 4 / 128]]], device=M.device)
+
+                    M *= mask
+                    grid = F.affine_grid(M, size=torch.Size(size)).to(device)
+                    warp_feat = F.grid_sample(nb_agent, grid).squeeze()
+                    pred[ii] += warp_feat
+
+            pred = torch.flip(pred, (2,))
+        # ============
+
+
         pred = torch.argmax(F.softmax(pred, dim=1), dim=1)
         compute_iou(pred, labels)
 
@@ -221,7 +252,7 @@ if __name__ == "__main__":
         help="The path to the saved model that is loaded to resume training",
     )
     parser.add_argument("--model_only", action="store_true", help="only load model")
-    parser.add_argument("--batch", default=2, type=int, help="Batch size")
+    parser.add_argument("--batch", default=1, type=int, help="Batch size")
     parser.add_argument("--nepoch", default=10, type=int, help="Number of epochs")
     parser.add_argument("--nworker", default=2, type=int, help="Number of workers")
     parser.add_argument("--lr", default=0.001, type=float, help="Initial learning rate")
@@ -241,6 +272,18 @@ if __name__ == "__main__":
         default=0,
         type=float,
         help="draw noise from normal distribution with given mean (in meters), apply to transformation matrix.",
+    )
+    parser.add_argument(
+        "--apply_late_fusion",
+        default=0,
+        type=int,
+        help="1: apply late fusion. 0: no late fusion",
+    )
+    parser.add_argument(
+        "--compress_level",
+        default=0,
+        type=int,
+        help="Compress the communication layer channels by 2**x times in encoder",
     )
     parser.add_argument("--bound", default="lowerbound", type=str)
     torch.multiprocessing.set_sharing_strategy("file_system")
