@@ -6,9 +6,9 @@ from coperception.models.seg.FusionBase import FusionBase
 
 
 class CatFusion(FusionBase):
-    def __init__(self, n_channels, n_classes, num_agent, compress_level):
+    def __init__(self, n_channels, n_classes, num_agent, compress_level, only_v2i):
         super().__init__(
-            n_channels, n_classes, num_agent=num_agent, compress_level=compress_level
+            n_channels, n_classes, num_agent=num_agent, compress_level=compress_level, only_v2i=only_v2i
         )
         self.modulation_layer_3 = ModulationLayer3()
 

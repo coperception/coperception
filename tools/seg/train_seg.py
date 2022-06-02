@@ -27,6 +27,7 @@ def main(config, args):
     compress_level = args.compress_level
     start_epoch = 1
     pose_noise = args.pose_noise
+    only_v2i = args.only_v2i
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -98,6 +99,7 @@ def main(config, args):
             warp_flag=args.warp_flag,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "v2v":
         model = V2VNet(
@@ -105,6 +107,7 @@ def main(config, args):
             config.num_class,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "mean":
         model = MeanFusion(
@@ -112,6 +115,7 @@ def main(config, args):
             config.num_class,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "max":
         model = MaxFusion(
@@ -119,6 +123,7 @@ def main(config, args):
             config.num_class,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "sum":
         model = SumFusion(
@@ -126,6 +131,7 @@ def main(config, args):
             config.num_class,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "agent":
         model = AgentWiseWeightedFusion(
@@ -133,6 +139,7 @@ def main(config, args):
             config.num_class,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "cat":
         model = CatFusion(
@@ -140,6 +147,7 @@ def main(config, args):
             config.num_class,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "disco":
         model = DiscoNet(
@@ -148,6 +156,7 @@ def main(config, args):
             num_agent=num_agent,
             kd_flag=True,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     else:
         model = UNet(
@@ -394,6 +403,12 @@ if __name__ == "__main__":
         default=0,
         type=float,
         help="draw noise from normal distribution with given mean (in meters), apply to transformation matrix.",
+    )
+    parser.add_argument(
+        "--only_v2i",
+        default=0,
+        type=int,
+        help="1: only v2i, 0: v2v and v2i",
     )
     torch.multiprocessing.set_sharing_strategy("file_system")
 

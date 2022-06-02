@@ -5,13 +5,14 @@ import torch.nn.functional as F
 
 class SegModelBase(nn.Module):
     def __init__(
-        self, n_channels, n_classes, bilinear=True, num_agent=5, compress_level=0
+        self, n_channels, n_classes, bilinear=True, num_agent=5, compress_level=0, only_v2i=False
     ):
         super().__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
         self.num_agent = num_agent
+        self.only_v2i = only_v2i
 
         self.inc = DoubleConv(n_channels, 64)
         self.down1 = Down(64, 128)

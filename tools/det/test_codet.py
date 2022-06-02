@@ -21,6 +21,7 @@ def check_folder(folder_path):
         os.mkdir(folder_path)
     return folder_path
 
+
 @torch.no_grad()
 def main(args):
     config = Config("train", binary=True, only_det=True)
@@ -31,6 +32,7 @@ def main(args):
     apply_late_fusion = args.apply_late_fusion
     pose_noise = args.pose_noise
     compress_level = args.compress_level
+    only_v2i = args.only_v2i
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -86,31 +88,66 @@ def main(args):
     elif flag.startswith("when2com") or flag.startswith("who2com"):
         # model = PixelwiseWeightedFusionSoftmax(config, layer=args.layer)
         model = When2com(
-            config, layer=args.layer, warp_flag=args.warp_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            warp_flag=args.warp_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "disco":
         model = DiscoNet(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "sum":
         model = SumFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "mean":
         model = MeanFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "max":
         model = MaxFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "cat":
         model = CatFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "agent":
         model = AgentWiseWeightedFusion(
-            config, layer=args.layer, kd_flag=args.kd_flag, num_agent=num_agent, compress_level=compress_level
+            config,
+            layer=args.layer,
+            kd_flag=args.kd_flag,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     else:
         model = V2VNet(
@@ -120,6 +157,7 @@ def main(args):
             layer_channel=256,
             num_agent=num_agent,
             compress_level=compress_level,
+            only_v2i=only_v2i,
         )
 
     model = nn.DataParallel(model)
@@ -362,7 +400,7 @@ def main(args):
         logger_root, f"{flag}_eval", "no_cross" if args.no_cross_road else "with_cross"
     )
     os.makedirs(logger_root, exist_ok=True)
-    log_file_path = os.path.join(logger_root, "log.txt")
+    log_file_path = os.path.join(logger_root, "log_test.txt")
     log_file = open(log_file_path, "w")
 
     def print_and_write_log(log_str):
@@ -538,6 +576,13 @@ if __name__ == "__main__":
         type=float,
         help="draw noise from normal distribution with given mean (in meters), apply to transformation matrix.",
     )
+    parser.add_argument(
+        "--only_v2i",
+        default=0,
+        type=int,
+        help="1: only v2i, 0: v2v and v2i",
+    )
+
     torch.multiprocessing.set_sharing_strategy("file_system")
     args = parser.parse_args()
     print(args)

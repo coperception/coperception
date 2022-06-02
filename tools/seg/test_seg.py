@@ -21,6 +21,7 @@ def check_folder(folder_path):
         os.mkdir(folder_path)
     return folder_path
 
+
 @torch.no_grad()
 def main(config, args):
     config.nepoch = args.nepoch
@@ -29,6 +30,7 @@ def main(config, args):
     logpath = args.logpath
     pose_noise = args.pose_noise
     compress_level = args.compress_level
+    only_v2i = args.only_v2i
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -94,28 +96,73 @@ def main(config, args):
             n_classes=config.num_class,
             warp_flag=args.warp_flag,
             num_agent=num_agent,
-            compress_level=compress_level
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "v2v":
-        model = V2VNet(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
+        model = V2VNet(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
+        )
     elif args.com == "mean":
-        model = MeanFusion(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
+        model = MeanFusion(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
+        )
     elif args.com == "max":
-        model = MaxFusion(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
+        model = MaxFusion(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
+        )
     elif args.com == "sum":
-        model = SumFusion(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
+        model = SumFusion(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
+        )
     elif args.com == "cat":
-        model = CatFusion(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
+        model = CatFusion(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
+        )
     elif args.com == "agent":
         model = AgentWiseWeightedFusion(
-            config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     elif args.com == "disco":
         model = DiscoNet(
-            config.in_channels, config.num_class, num_agent=num_agent, kd_flag=False, compress_level=compress_level
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            kd_flag=False,
+            compress_level=compress_level,
+            only_v2i=only_v2i,
         )
     else:
-        model = UNet(config.in_channels, config.num_class, num_agent=num_agent, compress_level=compress_level)
+        model = UNet(
+            config.in_channels,
+            config.num_class,
+            num_agent=num_agent,
+            compress_level=compress_level,
+        )
     # model = nn.DataParallel(model)
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -150,10 +197,6 @@ def main(config, args):
                 label_one_hot_list,
             ) = list(zip(*sample))
 
-        # add pose noise
-        if pose_noise > 0:
-            apply_pose_noise(pose_noise, trans_matrices)
-
         if flag == "upperbound":
             padded_voxel_points = torch.cat(tuple(padded_voxel_points_teacher_list), 0)
         else:
@@ -168,6 +211,11 @@ def main(config, args):
         data["labels"] = label_one_hot.to(device)
         if args.com:
             trans_matrices = torch.stack(trans_matrices, 1)
+
+            # add pose noise
+            if pose_noise > 0:
+                apply_pose_noise(pose_noise, trans_matrices)
+
             target_agent = torch.stack(target_agent, 1)
             num_sensor = torch.stack(num_sensor, 1)
 
@@ -180,7 +228,6 @@ def main(config, args):
 
         pred, labels = segmodule.step(data, num_agent, batch_size, loss=False)
         labels = labels.detach().cpu().numpy().astype(np.int32)
-
 
         # late fusion
         if args.apply_late_fusion:
@@ -195,10 +242,14 @@ def main(config, args):
                     nb_agent = torch.unsqueeze(pred[jj], 0)
                     tfm_ji = trans_matrices[0, jj, ii]
                     M = (
-                        torch.hstack((tfm_ji[:2, :2], -tfm_ji[:2, 3:4])).float().unsqueeze(0)
+                        torch.hstack((tfm_ji[:2, :2], -tfm_ji[:2, 3:4]))
+                        .float()
+                        .unsqueeze(0)
                     )  # [1,2,3]
 
-                    mask = torch.tensor([[[1, 1, 4 / 128], [1, 1, 4 / 128]]], device=M.device)
+                    mask = torch.tensor(
+                        [[[1, 1, 4 / 128], [1, 1, 4 / 128]]], device=M.device
+                    )
 
                     M *= mask
                     grid = F.affine_grid(M, size=torch.Size(size)).to(device)
@@ -207,7 +258,6 @@ def main(config, args):
 
             pred = torch.flip(pred, (2,))
         # ============
-
 
         pred = torch.argmax(F.softmax(pred, dim=1), dim=1)
         compute_iou(pred, labels)
@@ -285,6 +335,13 @@ if __name__ == "__main__":
         type=int,
         help="Compress the communication layer channels by 2**x times in encoder",
     )
+    parser.add_argument(
+        "--only_v2i",
+        default=0,
+        type=int,
+        help="1: only v2i, 0: v2v and v2i",
+    )
+
     parser.add_argument("--bound", default="lowerbound", type=str)
     torch.multiprocessing.set_sharing_strategy("file_system")
 

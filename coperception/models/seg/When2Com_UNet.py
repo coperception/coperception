@@ -23,9 +23,10 @@ class When2Com_UNet(SegModelBase):
         query_size=32,
         num_agent=5,
         compress_level=0,
+        only_v2i=False,
     ):
         super().__init__(
-            in_channels, n_classes, num_agent=num_agent, compress_level=compress_level
+            in_channels, n_classes, num_agent=num_agent, compress_level=compress_level, only_v2i=only_v2i
         )
         self.motion_state = config.motion_state
         if config.only_det:
@@ -187,6 +188,10 @@ class When2Com_UNet(SegModelBase):
                         if j == i:
                             val_mat[b, i, j] = tg_agent
                         else:
+                            if self.only_v2i and i != 0 and j != 0:
+                                val_mat[b, i, j] = local_com_mat[b, j]
+                                continue
+                            
                             val_mat[b, i, j] = super().feature_transformation(
                                 b,
                                 j,

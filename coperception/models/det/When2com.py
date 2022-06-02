@@ -203,16 +203,16 @@ class When2com(IntermediateModelBase):
             for b in range(batch_size):
                 num_agent = num_agent_tensor[b, 0]
                 for i in range(num_agent):
-                    if self.only_v2i and i != 0 and j != 0:
-                        val_mat[b, i, j] = local_com_mat[b, j]
-                        continue
-
                     tg_agent = local_com_mat[b, i]
                     all_warp = trans_matrices[b, i]  # transformation [2 5 5 4 4]
                     for j in range(num_agent):
                         if j == i:
                             val_mat[b, i, j] = tg_agent
                         else:
+                            if self.only_v2i and i != 0 and j != 0:
+                                val_mat[b, i, j] = local_com_mat[b, j]
+                                continue
+                            
                             warp_feat = super().feature_transformation(
                                 b,
                                 j,

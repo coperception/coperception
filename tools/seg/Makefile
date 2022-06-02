@@ -37,33 +37,35 @@ auto_resume_path := $(log_base)
 compress_level := 0
 # pose_noise in meters
 pose_noise := 0
+# only apply v2i communication
+only_v2i := 0
 
 create_data: 
 	python create_data_seg.py --root $(original_data_path) --split $(split) --scene_begin $(scene_begin) --scene_end $(scene_end) --savepath $(create_data_save_path) --from_agent $(from_agent) --to_agent $(to_agent)
 
 train_bound:
-	python $(training_script) --data $(training_data) --bound $(bound) --log --batch $(batch_size) --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --batch $(batch_size) --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --only_v2i $(only_v2i)
 
 train_bound_nc:
-	python $(training_script) --data $(training_data) --bound $(bound) --log --batch $(batch_size) --no_cross_road --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --batch $(batch_size) --no_cross_road --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --only_v2i $(only_v2i)
 
 train: 
-	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise) --only_v2i $(only_v2i)
 
 train_nc:
-	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --no_cross_road --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --no_cross_road --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise) --only_v2i $(only_v2i)
 
 train_warp: 
-	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --warp_flag --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --warp_flag --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise) --only_v2i $(only_v2i)
 
 train_warp_nc:
-	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --no_cross_road --warp_flag --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --no_cross_road --warp_flag --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise) --only_v2i $(only_v2i)
 
 train_disco:
-	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --resume_teacher $(log_base)/upperbound/with_cross/epoch_$(epoch_num).pth --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --resume_teacher $(log_base)/upperbound/with_cross/epoch_$(epoch_num).pth --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise) --only_v2i $(only_v2i)
 
 train_disco_nc:
-	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --no_cross_road --resume_teacher $(log_base)/upperbound/no_cross/epoch_$(epoch_num).pth --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise)
+	python $(training_script) --data $(training_data) --bound $(bound) --log --com $(com) --batch $(batch_size) --no_cross_road --resume_teacher $(log_base)/upperbound/no_cross/epoch_$(epoch_num).pth --logpath $(log_base) --nepoch $(epoch_num) --auto_resume_path $(auto_resume_path) --compress_level $(compress_level) --pose_noise $(pose_noise) --only_v2i $(only_v2i)
 
 test_bound:
 	python test_seg.py --data $(testring_data) --bound $(bound) --vis --resume $(log_base)/$(bound)/with_cross/epoch_$(epoch_num).pth --logpath $(log_base)
@@ -72,22 +74,22 @@ test_bound_nc:
 	python test_seg.py --data $(testring_data) --bound $(bound) --vis --resume $(log_base)/$(bound)/no_cross/epoch_$(epoch_num).pth --no_cross_road --logpath $(log_base)
 
 test:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com $(com) --resume $(log_base)/$(com)/with_cross/epoch_$(epoch_num).pth --logpath $(log_base) --compress_level $(compress_level) 
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com $(com) --resume $(log_base)/$(com)/with_cross/epoch_$(epoch_num).pth --logpath $(log_base) --compress_level $(compress_level) --only_v2i $(only_v2i)
 
 test_nc:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com $(com) --resume $(log_base)/$(com)/no_cross/epoch_$(epoch_num).pth --no_cross_road --logpath $(log_base) --compress_level $(compress_level) 
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com $(com) --resume $(log_base)/$(com)/no_cross/epoch_$(epoch_num).pth --no_cross_road --logpath $(log_base) --compress_level $(compress_level) --only_v2i $(only_v2i)
 
 test_w:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com/with_cross/epoch_$(epoch_num).pth --inference $(inference) --logpath $(log_base) --compress_level $(compress_level) 
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com/with_cross/epoch_$(epoch_num).pth --inference $(inference) --logpath $(log_base) --compress_level $(compress_level) --only_v2i $(only_v2i) 
 
 test_w_nc:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com/with_cross/epoch_$(epoch_num).pth --inference $(inference) --no_cross_road --logpath $(log_base) --compress_level $(compress_level) 
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com/with_cross/epoch_$(epoch_num).pth --inference $(inference) --no_cross_road --logpath $(log_base) --compress_level $(compress_level) --only_v2i $(only_v2i)
 
 test_warp:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com_warp/with_cross/epoch_$(epoch_num).pth --warp_flag --inference $(inference) --logpath $(log_base) --compress_level $(compress_level) 
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com_warp/with_cross/epoch_$(epoch_num).pth --warp_flag --inference $(inference) --logpath $(log_base) --compress_level $(compress_level) --only_v2i $(only_v2i)
 
 test_warp_nc:
-	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com_warp/no_cross/epoch_$(epoch_num).pth --warp_flag --no_cross_road --inference $(inference) --logpath $(log_base) --compress_level $(compress_level) 
+	python test_seg.py --data $(testring_data) --bound lowerbound --vis --com when2com --resume $(log_base)/when2com_warp/no_cross/epoch_$(epoch_num).pth --warp_flag --no_cross_road --inference $(inference) --logpath $(log_base) --compress_level $(compress_level) --only_v2i $(only_v2i) 
 
 visualize:
 	python visualizer.py --split $(split) --agent_idx $(agent_idx)

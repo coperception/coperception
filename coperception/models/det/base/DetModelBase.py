@@ -191,11 +191,11 @@ class DetModelBase(nn.Module):
             size (tuple): Size of the feature map.
         """
         for j in range(num_agent):
-            if self.only_v2i and agent_idx != 0 and j != 0:
-                self.neighbor_feat_list.append(local_com_mat[b, j])
-                continue
-
             if j != agent_idx:
+                if self.only_v2i and agent_idx != 0 and j != 0:
+                    self.neighbor_feat_list.append(local_com_mat[b, j])
+                    continue
+                
                 warp_feat = DetModelBase.feature_transformation(
                     b,
                     j,

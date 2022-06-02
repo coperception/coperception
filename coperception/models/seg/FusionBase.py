@@ -5,15 +5,16 @@ import torch.nn.functional as F
 
 class FusionBase(SegModelBase):
     def __init__(
-        self, n_channels, n_classes, num_agent=5, kd_flag=False, compress_level=0
+        self, n_channels, n_classes, num_agent=5, kd_flag=False, compress_level=0, only_v2i=False
     ):
         super().__init__(
-            n_channels, n_classes, num_agent=num_agent, compress_level=compress_level
+            n_channels, n_classes, num_agent=num_agent, compress_level=compress_level, only_v2i=only_v2i
         )
         self.neighbor_feat_list = None
         self.tg_agent = None
         self.current_num_agent = None
         self.kd_flag = kd_flag
+        self.only_v2i = only_v2i
 
     def fusion(self):
         raise NotImplementedError(
@@ -52,6 +53,10 @@ class FusionBase(SegModelBase):
 
                 for j in range(self.com_num_agent):
                     if j != i:
+                        if self.only_v2i and i != 0 and j != 0:
+                            self.neighbor_feat_list.append(local_com_mat[b, j])
+                            continue
+
                         self.neighbor_feat_list.append(
                             super().feature_transformation(
                                 b,

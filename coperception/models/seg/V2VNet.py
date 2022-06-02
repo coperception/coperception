@@ -6,9 +6,9 @@ import torch.nn.functional as F
 
 
 class V2VNet(SegModelBase):
-    def __init__(self, n_channels, n_classes, num_agent=5, compress_level=0):
+    def __init__(self, n_channels, n_classes, num_agent=5, compress_level=0, only_v2i=False):
         super().__init__(
-            n_channels, n_classes, num_agent=num_agent, compress_level=compress_level
+            n_channels, n_classes, num_agent=num_agent, compress_level=compress_level, only_v2i=only_v2i
         )
         self.layer_channel = 512
         self.gnn_iter_num = 1
@@ -57,6 +57,10 @@ class V2VNet(SegModelBase):
 
                     for j in range(com_num_agent):
                         if j != i:
+                            if self.only_v2i and i != 0 and j != 0:
+                                neighbor_feat_list.append(local_com_mat[b, j])
+                                continue
+                            
                             neighbor_feat_list.append(
                                 super().feature_transformation(
                                     b,
