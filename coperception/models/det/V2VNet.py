@@ -118,9 +118,10 @@ class V2VNet(IntermediateModelBase):
 
                 agent_feat_list = updated_feats_list
 
-                for k in range(num_agent):
-                    local_com_mat_update[b, k] = agent_feat_list[k]
-                feat_maps = super().agents_to_batch(local_com_mat_update)
+            for k in range(num_agent):
+                local_com_mat_update[b, k] = agent_feat_list[k]
+        
+        feat_maps = super().agents_to_batch(local_com_mat_update)
 
         decoded_layers = super().get_decoded_layers(
             encoded_layers, feat_maps, batch_size
