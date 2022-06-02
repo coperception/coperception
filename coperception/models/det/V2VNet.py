@@ -53,36 +53,24 @@ class V2VNet(IntermediateModelBase):
         device = bevs.device
 
         feat_maps, size = super().get_feature_maps_and_size(encoded_layers)
+        # get feat maps for each agent [10 512 16 16] -> [2 5 512 16 16]
+        feat_list = super().build_feature_list(batch_size, feat_maps)
+
+        local_com_mat = super().build_local_communication_matrix(
+            feat_list
+        )  # [2 5 512 16 16] [batch, agent, channel, height, width]
+        local_com_mat_update = super().build_local_communication_matrix(
+            feat_list
+        )  # to avoid the inplace operation
 
         for b in range(batch_size):
             num_agent = num_agent_tensor[b, 0]
-
-            for gnn_iter_idx in range(self.gnn_iter_num):
-
-                # no compression in first iter time, because already compressed once
-                if self.compress_level > 0 and gnn_iter_idx > 0:
-                    feat_maps = F.relu(
-                        self.u_encoder.bn_compress(self.u_encoder.com_compresser(feat_maps))
-                    )
-                    feat_maps = F.relu(
-                        self.u_encoder.bn_decompress(
-                            self.u_encoder.com_decompresser(feat_maps)
-                        )
-                    )
-
-                # get feat maps for each agent [10 512 16 16] -> [2 5 512 16 16]
-                feat_list = super().build_feature_list(batch_size, feat_maps)
-
-                local_com_mat = super().build_local_communication_matrix(
-                    feat_list
-                )  # [2 5 512 16 16] [batch, agent, channel, height, width]
-                local_com_mat_update = super().build_local_communication_matrix(
-                    feat_list
-                )  # to avoid the inplace operation
-
-                agent_feat_list = list()
-                for nb in range(self.agent_num):
-                    agent_feat_list.append(local_com_mat[b, nb])
+            
+            agent_feat_list = list()
+            for nb in range(self.agent_num):
+                agent_feat_list.append(local_com_mat[b, nb])
+                
+            for _ in range(self.gnn_iter_num):
 
                 updated_feats_list = []
 
