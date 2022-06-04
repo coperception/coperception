@@ -63,13 +63,14 @@ def check_folder(folder_name):
 
 # ---------------------- Extract the scenes, and then pre-process them into BEV maps ----------------------
 def create_data(
-    config, nusc, current_agent, config_global, scene_begin, scene_end, data_root
+    config, nusc, current_agent, config_global, data_root, scene_idxes_file
 ):
-    # if current_agent != 1:
-    # return
-    print("current_agent", current_agent)
+
+    scene_idxes_file = open(scene_idxes_file, "r")
+    scene_idxes = [int(line.strip()) for line in scene_idxes_file]
+    print(f'scenes to create: {scene_idxes}')
+    print("current_agent:", current_agent)
     channel = "LIDAR_TOP_id_" + str(current_agent)
-    res_scenes = range(100)
 
     valdataset = V2XSimDet(
         dataset_roots=[f"{data_root}/agent{i}" for i in range(args.num_agent)],
@@ -82,7 +83,7 @@ def create_data(
     for idx, file in enumerate(valdataset.seq_files[current_agent]):
         file2id[file] = idx
 
-    for scene_idx in res_scenes[scene_begin:scene_end]:
+    for scene_idx in scene_idxes:
         curr_scene = nusc.scene[scene_idx]
 
         first_sample_token = curr_scene["first_sample_token"]
@@ -244,8 +245,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "-s", "--split", type=str, help="The data split [train/val/test]"
     )
-    parser.add_argument("-b", "--scene_begin", type=int, help="scene_begin")
-    parser.add_argument("-e", "--scene_end", type=int, help="scene_end")
     parser.add_argument(
         "-p",
         "--savepath",
@@ -256,20 +255,26 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_agent", default=6, type=int, help="The total number of agents"
     )
-    parser.add_argument("--current_agent", type=int, help="Index of current agent")
+    parser.add_argument("--scene_idxes_file", type=str, help="File containing idxes of scenes to run tracking")
+    parser.add_argument(
+        "--from_agent", default=0, type=int, help="start from which agent"
+    )
+    parser.add_argument(
+        "--to_agent", default=6, type=int, help="until which agent (index + 1)"
+    )
     args = parser.parse_args()
 
     nusc = NuScenes(version="v1.0-mini", dataroot=args.root, verbose=True)
     print("Total number of scenes:", len(nusc.scene))
-    scene_begin = args.scene_begin
-    scene_end = args.scene_end
+    
+    for current_agent in range(args.from_agent, args.to_agent):
+        scene_idxes_file = args.scene_idxes_file
 
-    current_agent = args.current_agent
-    savepath = check_folder(args.savepath + args.split + "/agent" + str(current_agent))
-    config = Config(
-        args.split, True, savepath=savepath, is_cross_road=current_agent == 0
-    )
-    config_global = ConfigGlobal(args.split, True, savepath=savepath)
-    create_data(
-        config, nusc, current_agent, config_global, scene_begin, scene_end, args.data
-    )
+        savepath = check_folder(args.savepath + args.split + "/agent" + str(current_agent))
+        config = Config(
+            args.split, True, savepath=savepath, is_cross_road=current_agent == 0
+        )
+        config_global = ConfigGlobal(args.split, True, savepath=savepath)
+        create_data(
+            config, nusc, current_agent, config_global, args.data, scene_idxes_file
+        )
