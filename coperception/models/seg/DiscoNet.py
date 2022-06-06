@@ -77,7 +77,8 @@ class DiscoNet(FusionBase):
     def fusion(self):
         tmp_agent_weight_list = list()
         sum_weight = 0
-        for k in range(self.com_num_agent):
+        nb_len = len(self.neighbor_feat_list)
+        for k in range(nb_len):
             cat_feat = torch.cat([self.tg_agent, self.neighbor_feat_list[k]], dim=0)
             cat_feat = cat_feat.unsqueeze(0)
             agent_weight = torch.squeeze(self.pixel_weighted_fusion(cat_feat))
@@ -85,13 +86,13 @@ class DiscoNet(FusionBase):
             sum_weight = sum_weight + torch.exp(agent_weight)
 
         agent_weight_list = list()
-        for k in range(self.com_num_agent):
+        for k in range(nb_len):
             agent_weight = torch.div(tmp_agent_weight_list[k], sum_weight)
             agent_weight.expand([256, -1, -1])
             agent_weight_list.append(agent_weight)
 
         agent_wise_weight_feat = 0
-        for k in range(self.com_num_agent):
+        for k in range(nb_len):
             agent_wise_weight_feat = (
                 agent_wise_weight_feat
                 + agent_weight_list[k] * self.neighbor_feat_list[k]
