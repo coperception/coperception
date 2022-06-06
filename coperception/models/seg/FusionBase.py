@@ -54,7 +54,6 @@ class FusionBase(SegModelBase):
                 for j in range(self.com_num_agent):
                     if j != i:
                         if self.only_v2i and i != 0 and j != 0:
-                            self.neighbor_feat_list.append(local_com_mat[b, j])
                             continue
 
                         self.neighbor_feat_list.append(

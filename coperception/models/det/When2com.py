@@ -210,7 +210,6 @@ class When2com(IntermediateModelBase):
                             val_mat[b, i, j] = tg_agent
                         else:
                             if self.only_v2i and i != 0 and j != 0:
-                                val_mat[b, i, j] = local_com_mat[b, j]
                                 continue
                             
                             warp_feat = super().feature_transformation(
