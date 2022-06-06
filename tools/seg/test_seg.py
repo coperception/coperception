@@ -227,6 +227,12 @@ def main(config, args):
             data["num_sensor"] = num_sensor.to(device)
 
         pred, labels = segmodule.step(data, num_agent, batch_size, loss=False)
+
+        # If has RSU, do not count RSU's output into evaluation
+        if not args.no_cross_road:
+            pred = pred[1:, :, :, :]
+            labels = labels[1:, :, :]
+
         labels = labels.detach().cpu().numpy().astype(np.int32)
 
         # late fusion

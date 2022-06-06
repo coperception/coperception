@@ -283,8 +283,12 @@ def main(args):
             )
 
         box_color_map = ["red", "yellow", "blue", "purple", "black", "orange"]
+
+        # If has RSU, do not count RSU's output into evaluation
+        eval_start_idx = 0 if args.no_cross_road else 1
+        
         # local qualitative evaluation
-        for k in range(num_agent):
+        for k in range(eval_start_idx, num_agent):
             box_colors = None
             if apply_late_fusion == 1 and len(result[k]) != 0:
                 pred_restore = result[k][0][0][0]["pred"]
@@ -411,7 +415,7 @@ def main(args):
     # local mAP evaluation
     det_results_all_local = []
     annotations_all_local = []
-    for k in range(num_agent):
+    for k in range(eval_start_idx, num_agent):
         if type(det_results_local[k]) != list or len(det_results_local[k]) == 0:
             continue
 
@@ -471,7 +475,7 @@ def main(args):
         )
     )
 
-    for k in range(num_agent):
+    for k in range(eval_start_idx, num_agent):
         print_and_write_log(
             "agent{} mAP@0.5 is {} and mAP@0.7 is {}".format(
                 k, mean_ap_local[k * 2], mean_ap_local[(k * 2) + 1]
