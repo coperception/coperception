@@ -74,10 +74,13 @@ class Config(object):
 
         # The specifications for BEV maps
         self.voxel_size = (0.25, 0.25, 0.4)
+        #self.voxel_size = (0.375, 0.375, 0.4)
         self.area_extents = (
             np.array([[-32.0, 32.0], [-32.0, 32.0], [-8.0, -3.0]])
+            #np.array([[-48.0, 48.0], [-48.0, 48.0], [-8.0, -3.0]])
             if is_cross_road
             else np.array([[-32.0, 32.0], [-32.0, 32.0], [-3.0, 2.0]])
+            #else np.array([[-48.0, 48.0], [-48.0, 48.0], [-3.0, 2.0]])
         )
         self.is_cross_road = is_cross_road
         self.past_frame_skip = 3  # when generating the BEV maps, how many history frames need to be skipped
