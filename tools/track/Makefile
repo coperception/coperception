@@ -13,7 +13,7 @@ split := test
 # det path
 det_path := /scratch/dm4524/ai4ce/coperception/tools/det
 # file containing idxes of scenes to run tracking
-scene_idxes_file := $(det_path)/test_scenes.txt
+scene_idxes_file := /scratch/dm4524/ai4ce/coperception/tools/utils/test_scenes.txt
 # Index of the start agent
 from_agent := 1
 # Index of the end agent + 1
