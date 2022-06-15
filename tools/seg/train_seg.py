@@ -22,56 +22,51 @@ def main(config, args):
     config.nepoch = args.nepoch
     num_epochs = args.nepoch
     need_log = args.log
-    batch_size = args.batch
+    batch_size = args.batch_size
     num_workers = args.nworker
     compress_level = args.compress_level
     start_epoch = 1
     pose_noise = args.pose_noise
     only_v2i = args.only_v2i
+    kd_flag = args.kd_flag
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device_num = torch.cuda.device_count()
     print("device number", device_num)
 
-    kd_flag = False
-    if args.bound == "upperbound":
+    if args.com == "upperbound":
         flag = "upperbound"
+    elif args.com == "when2com" and args.warp_flag:
+        flag = "when2com_warp"
+    elif args.com in [
+        "lowerbound",
+        "v2v",
+        "disco",
+        "sum",
+        "mean",
+        "max",
+        "cat",
+        "agent",
+        "when2com",
+    ]:
+        flag = args.com
     else:
-        if args.com == "when2com":
-            if args.warp_flag:
-                flag = "when2com_warp"
-            else:
-                flag = "when2com"
-        elif args.com == "v2v":
-            flag = "v2v"
-        elif args.com == "mean":
-            flag = "mean"
-        elif args.com == "max":
-            flag = "max"
-        elif args.com == "sum":
-            flag = "sum"
-        elif args.com == "agent":
-            flag = "agent"
-        elif args.com == "cat":
-            flag = "cat"
-        elif args.com == "disco":
-            flag = "disco"
-            kd_flag = True
-        else:
-            flag = "lowerbound"
+        raise ValueError(f"com: {args.com} is not supported")
+
     config.flag = flag
 
     num_agent = args.num_agent
-    agent_idx_range = range(1, num_agent) if args.no_cross_road else range(num_agent)
+    # agent0 is the RSU
+    agent_idx_range = range(num_agent) if args.rsu else range(1, num_agent)
     trainset = V2XSimSeg(
         dataset_roots=[args.data + "/agent%d" % i for i in agent_idx_range],
         config=config,
         split="train",
         com=args.com,
-        bound=args.bound,
+        bound="upperbound" if args.com == "upperbound" else "lowerbound",
         kd_flag=kd_flag,
-        no_cross_road=args.no_cross_road,
+        rsu=args.rsu,
     )
     trainloader = DataLoader(
         trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers
@@ -81,17 +76,15 @@ def main(config, args):
     logger_root = args.logpath if args.logpath != "" else "logs"
     model_save_path = os.path.join(logger_root, flag)
 
-    if args.no_cross_road:
-        model_save_path = os.path.join(model_save_path, "no_cross")
-    else:
-        model_save_path = os.path.join(model_save_path, "with_cross")
-    cross_path = "no_cross" if args.no_cross_road else "with_cross"
+    rsu_path = "with_rsu" if args.rsu else "no_rsu"
+    model_save_path = os.path.join(model_save_path, rsu_path)
     os.makedirs(model_save_path, exist_ok=True)
 
     # build model
-    if args.no_cross_road:
+    if not args.rsu:
         num_agent -= 1
-    if args.com == "when2com":
+
+    if flag == "when2com" or flag == "when2com_warp":
         model = When2Com_UNet(
             config,
             in_channels=config.in_channels,
@@ -158,7 +151,7 @@ def main(config, args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    else:
+    elif args.com == "lowerbound" or args.com == "upperbound":
         model = UNet(
             config.in_channels,
             config.num_class,
@@ -169,7 +162,7 @@ def main(config, args):
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    config.com = args.com
+    config.com = '' if (args.com == 'upperbound' or args.com == 'lowerbound') else args.com
 
     if kd_flag:
         teacher = UNet(
@@ -192,7 +185,7 @@ def main(config, args):
     if args.resume is None and (
         args.auto_resume_path == ""
         or "epoch_1.pth"
-        not in os.listdir(os.path.join(args.auto_resume_path, f"{flag}/{cross_path}"))
+        not in os.listdir(os.path.join(args.auto_resume_path, f"{flag}/{rsu_path}"))
     ):
         log_file_name = os.path.join(model_save_path, "log.txt")
         saver = open(log_file_name, "w")
@@ -207,7 +200,7 @@ def main(config, args):
     else:
         if args.auto_resume_path != "":
             model_save_path = os.path.join(
-                args.auto_resume_path, f"{flag}/{cross_path}"
+                args.auto_resume_path, f"{flag}/{rsu_path}"
             )
         else:
             model_save_path = args.resume[: args.resume.rfind("/")]
@@ -263,8 +256,7 @@ def main(config, args):
 
         t = time.time()
         for idx, sample in enumerate(tqdm(trainloader)):
-
-            if args.com:
+            if flag != 'lowerbound' and flag != 'upperbound':
                 (
                     padded_voxel_points_list,
                     padded_voxel_points_teacher_list,
@@ -294,7 +286,7 @@ def main(config, args):
             data = {}
             data["bev_seq"] = padded_voxel_points.to(device).float()
             data["labels"] = label_one_hot.to(device)
-            if args.com:
+            if flag != 'lowerbound' and flag != 'upperbound':
                 trans_matrices = torch.stack(trans_matrices, 1)
                 # add pose noise
                 if pose_noise > 0:
@@ -304,7 +296,7 @@ def main(config, args):
                 data["trans_matrices"] = trans_matrices.to(device)
                 data["target_agent"] = target_agent
 
-                if args.no_cross_road:
+                if not args.rsu:
                     num_sensor -= 1
 
                 data["num_sensor"] = num_sensor
@@ -354,7 +346,6 @@ if __name__ == "__main__":
         type=str,
         help="The path to the preprocessed sparse BEV training data",
     )
-    parser.add_argument("--bound")
     parser.add_argument(
         "--resume",
         default=None,
@@ -362,8 +353,14 @@ if __name__ == "__main__":
         help="The path to the saved model that is loaded to resume training",
     )
     parser.add_argument("--model_only", action="store_true", help="only load model")
-    parser.add_argument("--batch", default=1, type=int, help="Batch size")
-    parser.add_argument("--warp_flag", action="store_true")
+    parser.add_argument("--batch_size", default=4, type=int, help="Batch size")
+    parser.add_argument("--warp_flag", default=0, type=int, help="Whether to use pose info for When2com")
+    parser.add_argument(
+        "--kd_flag",
+        default=0,
+        type=int,
+        help="Whether to enable distillation (only DiscNet is 1 )",
+    )
     parser.add_argument(
         "--augmentation", default=False, help="Whether to use data augmentation"
     )
@@ -372,10 +369,8 @@ if __name__ == "__main__":
     parser.add_argument("--lr", default=0.001, type=float, help="Initial learning rate")
     parser.add_argument("--log", action="store_true", help="Whether to log")
     parser.add_argument("--logpath", default="", help="The path to the output log file")
-    parser.add_argument("--com", default="", type=str, help="Whether to communicate")
-    parser.add_argument(
-        "--no_cross_road", action="store_true", help="Do not load data of cross roads"
-    )
+    parser.add_argument("--com", default="", type=str, help="lowerbound/upperbound/disco/when2com/v2v/sum/mean/max/cat/agent")
+    parser.add_argument("--rsu", default=0, type=int, help="0: no RSU, 1: RSU")
     parser.add_argument(
         "--num_agent", default=6, type=int, help="The total number of agents"
     )

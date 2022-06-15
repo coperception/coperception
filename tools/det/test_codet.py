@@ -40,45 +40,46 @@ def main(args):
     print("device number", device_num)
 
     config.inference = args.inference
-    if args.bound == "upperbound":
+    if args.com == "upperbound":
         flag = "upperbound"
+    elif args.com == "when2com":
+        flag = "when2com"
+        if args.inference == "argmax_test":
+            flag = "who2com"
+        if args.warp_flag:
+            flag = flag + "_warp"
+    elif args.com in {"v2v", "disco", "sum", "mean", "max", "cat", "agent"}:
+        flag = args.com
+    elif args.com == "lowerbound":
+        flag = "lowerbound"
+        if args.box_com:
+            flag += "_box_com"
     else:
-        if args.com == "when2com":
-            flag = "when2com"
-            if args.inference == "argmax_test":
-                flag = "who2com"
-            if args.warp_flag:
-                flag = flag + "_warp"
-        elif args.com in {"v2v", "disco", "sum", "mean", "max", "cat", "agent"}:
-            flag = args.com
-        else:
-            flag = "lowerbound"
-            if args.box_com:
-                flag += "_box_com"
+        raise ValueError(f"com: {args.com} is not supported")
 
     print("flag", flag)
     config.flag = flag
     config.split = "test"
 
     num_agent = args.num_agent
-    # agent0 is the cross road
-    agent_idx_range = range(1, num_agent) if args.no_cross_road else range(num_agent)
+    # agent0 is the RSU
+    agent_idx_range = range(num_agent) if args.rsu else range(1, num_agent)
     validation_dataset = V2XSimDet(
         dataset_roots=[f"{args.data}/agent{i}" for i in agent_idx_range],
         config=config,
         config_global=config_global,
         split="val",
         val=True,
-        bound=args.bound,
+        bound="upperbound" if args.com == "upperbound" else "lowerbound",
         kd_flag=args.kd_flag,
-        no_cross_road=args.no_cross_road,
+        rsu=args.rsu,
     )
     validation_data_loader = DataLoader(
         validation_dataset, batch_size=1, shuffle=False, num_workers=num_workers
     )
     print("Validation dataset size:", len(validation_dataset))
 
-    if args.no_cross_road:
+    if not args.rsu:
         num_agent -= 1
 
     if flag == "upperbound" or flag.startswith("lowerbound"):
@@ -149,7 +150,7 @@ def main(args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    else:
+    elif args.com == "v2v":
         model = V2VNet(
             config,
             gnn_iter_times=args.gnn_iter_times,
@@ -239,7 +240,7 @@ def main(args):
         if pose_noise > 0:
             apply_pose_noise(pose_noise, trans_matrices)
 
-        if args.no_cross_road:
+        if not args.rsu:
             num_all_agents -= 1
 
         if flag == "upperbound":
@@ -285,8 +286,8 @@ def main(args):
         box_color_map = ["red", "yellow", "blue", "purple", "black", "orange"]
 
         # If has RSU, do not count RSU's output into evaluation
-        eval_start_idx = 0 if args.no_cross_road else 1
-        
+        eval_start_idx = 1 if args.rsu else 0
+
         # local qualitative evaluation
         for k in range(eval_start_idx, num_agent):
             box_colors = None
@@ -401,7 +402,7 @@ def main(args):
 
     logger_root = args.logpath if args.logpath != "" else "logs"
     logger_root = os.path.join(
-        logger_root, f"{flag}_eval", "no_cross" if args.no_cross_road else "with_cross"
+        logger_root, f"{flag}_eval", "with_rsu" if args.rsu else "no_rsu"
     )
     os.makedirs(logger_root, exist_ok=True)
     log_file_path = os.path.join(logger_root, "log_test.txt")
@@ -444,9 +445,6 @@ def main(args):
         det_results_all_local += det_results_local[k]
         annotations_all_local += annotations_local[k]
 
-    # average local mAP evaluation
-    print_and_write_log("Average Local mAP@0.5")
-
     mean_ap_local_average, _ = eval_map(
         det_results_all_local,
         annotations_all_local,
@@ -456,8 +454,6 @@ def main(args):
         logger=None,
     )
     mean_ap_local.append(mean_ap_local_average)
-
-    print_and_write_log("Average Local mAP@0.7")
 
     mean_ap_local_average, _ = eval_map(
         det_results_all_local,
@@ -478,7 +474,7 @@ def main(args):
     for k in range(eval_start_idx, num_agent):
         print_and_write_log(
             "agent{} mAP@0.5 is {} and mAP@0.7 is {}".format(
-                k, mean_ap_local[k * 2], mean_ap_local[(k * 2) + 1]
+                k + 1 if not args.rsu else k, mean_ap_local[k * 2], mean_ap_local[(k * 2) + 1]
             )
         )
 
@@ -501,7 +497,6 @@ if __name__ == "__main__":
         type=str,
         help="The path to the preprocessed sparse BEV training data",
     )
-    parser.add_argument("--batch", default=4, type=int, help="The number of scene")
     parser.add_argument("--nepoch", default=100, type=int, help="Number of epochs")
     parser.add_argument("--nworker", default=1, type=int, help="Number of workers")
     parser.add_argument("--lr", default=0.001, type=float, help="Initial learning rate")
@@ -526,7 +521,7 @@ if __name__ == "__main__":
         help="Communicate which layer in the single layer com mode",
     )
     parser.add_argument(
-        "--warp_flag", action="store_true", help="Whether to use pose info for When2com"
+        "--warp_flag", default=0, type=int, help="Whether to use pose info for When2com"
     )
     parser.add_argument(
         "--kd_flag",
@@ -545,19 +540,15 @@ if __name__ == "__main__":
         "--visualization", type=int, default=0, help="Visualize validation result"
     )
     parser.add_argument(
-        "--com", default="", type=str, help="disco/when2com/v2v/sum/mean/max/cat/agent"
-    )
-    parser.add_argument(
-        "--bound",
+        "--com",
+        default="",
         type=str,
-        help="The input setting: lowerbound -> single-view or upperbound -> multi-view",
+        help="lowerbound/upperbound/disco/when2com/v2v/sum/mean/max/cat/agent",
     )
     parser.add_argument("--inference", type=str)
     parser.add_argument("--tracking", action="store_true")
     parser.add_argument("--box_com", action="store_true")
-    parser.add_argument(
-        "--no_cross_road", action="store_true", help="Do not load data of cross roads"
-    )
+    parser.add_argument("--rsu", default=0, type=int, help="0: no RSU, 1: RSU")
     # scene_batch => batch size in each scene
     parser.add_argument(
         "--num_agent", default=6, type=int, help="The total number of agents"

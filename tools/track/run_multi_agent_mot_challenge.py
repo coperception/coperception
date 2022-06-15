@@ -7,7 +7,7 @@ def parse_args():
     """Parse input arguments."""
     parser = argparse.ArgumentParser(description="SORT demo")
     parser.add_argument("--mode", type=str)
-    parser.add_argument("--cross", type=str, help='[with_cross / no_cross]')
+    parser.add_argument("--rsu", type=str, help='[with_rsu / no_rsu]')
     parser.add_argument("--scene_idxes_file", type=str, help="File containing idxes of scenes to run tracking")
     parser.add_argument(
         "--from_agent", default=0, type=int, help="start from which agent"
@@ -22,7 +22,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     mode = args.mode
-    cross = args.cross
+    rsu = args.rsu
     scene_idxes_file = args.scene_idxes_file
     from_agent = args.from_agent
     to_agent = args.to_agent
@@ -36,10 +36,10 @@ if __name__ == "__main__":
     
     # run eval for MOTA and MOTP
     for current_agent in range(from_agent, to_agent):
-        os.system(f'python ./TrackEval/scripts/run_mot_challenge.py --BENCHMARK V2X --SPLIT_TO_EVAL {split}{current_agent} --TRACKERS_TO_EVAL sort-{mode}/{cross} --METRICS CLEAR --DO_PREPROC False')
+        os.system(f'python ./TrackEval/scripts/run_mot_challenge.py --BENCHMARK V2X --SPLIT_TO_EVAL {split}{current_agent} --TRACKERS_TO_EVAL sort-{mode}/{rsu} --METRICS CLEAR --DO_PREPROC False')
 
         # collect results
-        eval_output_path = f'./TrackEval/data/trackers/mot_challenge/V2X-test{current_agent}/sort-{mode}/{cross}/pedestrian_summary.txt'
+        eval_output_path = f'./TrackEval/data/trackers/mot_challenge/V2X-test{current_agent}/sort-{mode}/{rsu}/pedestrian_summary.txt'
         eval_output_file = open(eval_output_path, 'r')
         # skip header
         eval_output_file.readline()
@@ -51,10 +51,10 @@ if __name__ == "__main__":
 
     # run eval for other metrics
     for current_agent in range(from_agent, to_agent):
-        os.system(f'python ./TrackEval/scripts/run_mot_challenge.py --BENCHMARK V2X --SPLIT_TO_EVAL {split}{current_agent} --TRACKERS_TO_EVAL sort-{mode}/{cross} --METRICS HOTA --DO_PREPROC False')
+        os.system(f'python ./TrackEval/scripts/run_mot_challenge.py --BENCHMARK V2X --SPLIT_TO_EVAL {split}{current_agent} --TRACKERS_TO_EVAL sort-{mode}/{rsu} --METRICS HOTA --DO_PREPROC False')
 
         # collect results
-        eval_output_path = f'./TrackEval/data/trackers/mot_challenge/V2X-test{current_agent}/sort-{mode}/{cross}/pedestrian_summary.txt'
+        eval_output_path = f'./TrackEval/data/trackers/mot_challenge/V2X-test{current_agent}/sort-{mode}/{rsu}/pedestrian_summary.txt'
         eval_output_file = open(eval_output_path, 'r')
         # skip header
         eval_output_file.readline()
@@ -73,4 +73,4 @@ if __name__ == "__main__":
     all_rows.append(['mean'] + list(mean)[1:])
     df = pd.DataFrame(all_rows, columns=['agent', 'MOTA', 'MOTP', 'HOTA', 'DetA', 'AssA', 'DetRe', 'DetPr', 'AssRe', 'AssPr', 'LocA'])
     os.makedirs('logs', exist_ok=True)
-    df.to_csv(f'logs/logs_{mode}_{cross}.csv', sep=',', index=False)
+    df.to_csv(f'logs/logs_{mode}_{rsu}.csv', sep=',', index=False)

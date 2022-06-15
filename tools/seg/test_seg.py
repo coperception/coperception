@@ -25,7 +25,7 @@ def check_folder(folder_path):
 @torch.no_grad()
 def main(config, args):
     config.nepoch = args.nepoch
-    batch_size = args.batch
+    batch_size = args.batch_size
     num_workers = args.nworker
     logpath = args.logpath
     pose_noise = args.pose_noise
@@ -37,43 +37,33 @@ def main(config, args):
     device_num = torch.cuda.device_count()
     print("device number", device_num)
 
-    if args.bound == "upperbound":
+    if args.com == "upperbound":
         flag = "upperbound"
+    elif args.com == "when2com":
+        flag = "when2com"
+        if args.inference == "argmax_test":
+            flag = "who2com"
+        if args.warp_flag:
+            flag = flag + "_warp"
+    elif args.com in {"v2v", "disco", "sum", "mean", "max", "cat", "agent"}:
+        flag = args.com
+    elif args.com == "lowerbound":
+        flag = "lowerbound"
+        if args.box_com:
+            flag += "_box_com"
     else:
-        if args.com == "when2com":
-            flag = "when2com"
-            if args.warp_flag:
-                flag += "_warp"
-            if args.inference == "argmax_test":
-                flag = flag.replace("when2com", "who2com")
-        elif args.com == "v2v":
-            flag = "v2v"
-        elif args.com == "mean":
-            flag = "mean"
-        elif args.com == "max":
-            flag = "max"
-        elif args.com == "sum":
-            flag = "sum"
-        elif args.com == "cat":
-            flag = "cat"
-        elif args.com == "agent":
-            flag = "agent"
-        elif args.com == "disco":
-            flag = "disco"
-        else:
-            flag = "lowerbound"
+        raise ValueError(f"com: {args.com} is not supported")
 
     num_agent = args.num_agent
-    agent_idx_range = range(1, num_agent) if args.no_cross_road else range(num_agent)
-    # TODO: kd_flag
+    agent_idx_range = range(num_agent) if args.rsu else range(1, num_agent)
     valset = V2XSimSeg(
         dataset_roots=[args.data + "/agent%d" % i for i in agent_idx_range],
         config=config,
         split="val",
         val=True,
         com=args.com,
-        bound=args.bound,
-        no_cross_road=args.no_cross_road,
+        bound="upperbound" if args.com == "upperbound" else "lowerbound",
+        rsu=args.rsu,
     )
     valloader = DataLoader(
         valset, batch_size=batch_size, shuffle=False, num_workers=num_workers
@@ -87,7 +77,7 @@ def main(config, args):
     config.inference = args.inference
     config.split = "test"
     # build model
-    if args.no_cross_road:
+    if not args.rsu:
         num_agent -= 1
     if args.com.startswith("when2com") or args.com.startswith("who2com"):
         model = When2Com_UNet(
@@ -156,7 +146,7 @@ def main(config, args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    else:
+    elif args.com == "lowerbound" or args.com == "upperbound":
         model = UNet(
             config.in_channels,
             config.num_class,
@@ -175,13 +165,13 @@ def main(config, args):
     os.makedirs(logpath, exist_ok=True)
     logpath = os.path.join(logpath, f"{flag}_eval")
     os.makedirs(logpath, exist_ok=True)
-    logpath = os.path.join(logpath, "no_cross" if args.no_cross_road else "with_cross")
+    logpath = os.path.join(logpath, "with_rsu" if args.rsu else "no_rsu")
     os.makedirs(logpath, exist_ok=True)
     print("log path:", logpath)
 
     for idx, sample in enumerate(tqdm(valloader)):
 
-        if args.com:
+        if flag != "upperbound" and flag != "lowerbound":
             (
                 padded_voxel_points_list,
                 padded_voxel_points_teacher_list,
@@ -209,7 +199,7 @@ def main(config, args):
         data = {}
         data["bev_seq"] = padded_voxel_points.to(device).float()
         data["labels"] = label_one_hot.to(device)
-        if args.com:
+        if flag != "upperbound" and flag != "lowerbound":
             trans_matrices = torch.stack(trans_matrices, 1)
 
             # add pose noise
@@ -219,7 +209,7 @@ def main(config, args):
             target_agent = torch.stack(target_agent, 1)
             num_sensor = torch.stack(num_sensor, 1)
 
-            if args.no_cross_road:
+            if not args.rsu:
                 num_sensor -= 1
 
             data["trans_matrices"] = trans_matrices.to(device)
@@ -229,7 +219,7 @@ def main(config, args):
         pred, labels = segmodule.step(data, num_agent, batch_size, loss=False)
 
         # If has RSU, do not count RSU's output into evaluation
-        if not args.no_cross_road:
+        if args.rsu:
             pred = pred[1:, :, :, :]
             labels = labels[1:, :, :]
 
@@ -268,7 +258,7 @@ def main(config, args):
         pred = torch.argmax(F.softmax(pred, dim=1), dim=1)
         compute_iou(pred, labels)
 
-        if args.vis and idx % 50 == 0:  # render segmatic map
+        if args.visualization and idx % 50 == 0:  # render segmatic map
             plt.clf()
             pred_map = np.zeros((256, 256, 3))
             gt_map = np.zeros((256, 256, 3))
@@ -308,18 +298,23 @@ if __name__ == "__main__":
         help="The path to the saved model that is loaded to resume training",
     )
     parser.add_argument("--model_only", action="store_true", help="only load model")
-    parser.add_argument("--batch", default=1, type=int, help="Batch size")
+    parser.add_argument("--batch_size", default=1, type=int, help="Batch size")
     parser.add_argument("--nepoch", default=10, type=int, help="Number of epochs")
     parser.add_argument("--nworker", default=2, type=int, help="Number of workers")
     parser.add_argument("--lr", default=0.001, type=float, help="Initial learning rate")
-    parser.add_argument("--com", default="", type=str, help="Whether to communicate")
-    parser.add_argument("--inference", default="activated")
-    parser.add_argument("--warp_flag", action="store_true")
-    parser.add_argument("--vis", action="store_true")
-    parser.add_argument("--logpath", default="", help="The path to the output log file")
     parser.add_argument(
-        "--no_cross_road", action="store_true", help="Do not load data of cross roads"
+        "--com",
+        default="",
+        type=str,
+        help="lowerbound/upperbound/disco/when2com/v2v/sum/mean/max/cat/agent",
     )
+    parser.add_argument("--inference", default="activated")
+    parser.add_argument(
+        "--warp_flag", default=0, type=int, help="Whether to use pose info for When2com"
+    )
+    parser.add_argument("--visualization", action="store_true")
+    parser.add_argument("--logpath", default="", help="The path to the output log file")
+    parser.add_argument("--rsu", default=0, type=int, help="0: no RSU, 1: RSU")
     parser.add_argument(
         "--num_agent", default=6, type=int, help="The total number of agents"
     )
@@ -348,7 +343,6 @@ if __name__ == "__main__":
         help="1: only v2i, 0: v2v and v2i",
     )
 
-    parser.add_argument("--bound", default="lowerbound", type=str)
     torch.multiprocessing.set_sharing_strategy("file_system")
 
     args = parser.parse_args()

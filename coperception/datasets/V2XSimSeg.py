@@ -20,7 +20,7 @@ class V2XSimSeg(Dataset):
         com=False,
         bound=None,
         kd_flag=False,
-        no_cross_road=False,
+        rsu=False,
     ):
         """
         This dataloader loads single sequence for a keyframe, and is not designed for computing the
@@ -47,7 +47,7 @@ class V2XSimSeg(Dataset):
         self.com = com
         self.bound = bound
         self.kd_flag = kd_flag
-        self.no_cross_road = no_cross_road
+        self.rsu = rsu
 
         if dataset_roots is None:
             raise ValueError(
@@ -114,7 +114,7 @@ class V2XSimSeg(Dataset):
             gt_data_handle = np.load(seq_file, allow_pickle=True)
             if gt_data_handle == 0:
                 empty_flag = True
-                if self.com:
+                if self.com != 'lowerbound' and self.com != 'upperbound':
                     return (
                         torch.zeros((256, 256, 13)).bool(),
                         torch.zeros((256, 256, 13)).bool(),
@@ -155,10 +155,10 @@ class V2XSimSeg(Dataset):
 
             padded_voxel_points_teacher = list()
             # if self.bound == 'upperbound' or self.kd_flag:
-            if self.no_cross_road:
-                indices_teacher = gt_dict["voxel_indices_teacher_no_cross_road"]
-            else:
+            if self.rsu:
                 indices_teacher = gt_dict["voxel_indices_teacher"]
+            else:
+                indices_teacher = gt_dict["voxel_indices_teacher_no_cross_road"]
 
             curr_voxels_teacher = np.zeros(self.dims, dtype=bool)
             curr_voxels_teacher[
@@ -169,11 +169,11 @@ class V2XSimSeg(Dataset):
             padded_voxel_points_teacher = np.stack(padded_voxel_points_teacher, 0)
             padded_voxel_points_teacher = np.squeeze(padded_voxel_points_teacher, 0)
 
-            if self.com:
-                if self.no_cross_road:
-                    trans_matrices = gt_dict["trans_matrices_no_cross_road"]
-                else:
+            if self.com != 'lowerbound' and self.com != 'upperbound':
+                if self.rsu:
                     trans_matrices = gt_dict["trans_matrices"]
+                else:
+                    trans_matrices = gt_dict["trans_matrices_no_cross_road"]
 
                 target_agent_id = gt_dict["target_agent_id"]
                 num_sensor = gt_dict["num_sensor"]

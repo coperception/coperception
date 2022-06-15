@@ -19,7 +19,7 @@ class V2XSimDet(Dataset):
         val=False,
         bound=None,
         kd_flag=False,
-        no_cross_road=False,
+        rsu=False,
     ):
         """
         This dataloader loads single sequence for a keyframe, and is not designed for computing the
@@ -53,7 +53,7 @@ class V2XSimDet(Dataset):
 
         self.bound = bound
         self.kd_flag = kd_flag
-        self.no_cross_road = no_cross_road
+        self.rsu = rsu
 
         # dataset_root = dataset_root + '/'+split
         if dataset_roots is None:
@@ -334,10 +334,10 @@ class V2XSimDet(Dataset):
             else:
                 vis_maps = np.zeros(0)
 
-            if self.no_cross_road:
-                trans_matrices = gt_dict["trans_matrices_no_cross_road"]
-            else:
+            if self.rsu:
                 trans_matrices = gt_dict["trans_matrices"]
+            else:
+                trans_matrices = gt_dict["trans_matrices_no_cross_road"]
 
             label_one_hot = label_one_hot.astype(np.float32)
             reg_target = reg_target.astype(np.float32)
@@ -352,10 +352,10 @@ class V2XSimDet(Dataset):
             if "voxel_indices_teacher" in gt_dict and (
                 self.kd_flag or self.bound == "upperbound" or self.bound == "both"
             ):
-                if self.no_cross_road:
-                    indices_teacher = gt_dict["voxel_indices_teacher_no_cross_road"]
-                else:
+                if self.rsu:
                     indices_teacher = gt_dict["voxel_indices_teacher"]
+                else:
+                    indices_teacher = gt_dict["voxel_indices_teacher_no_cross_road"]
 
                 curr_voxels_teacher = np.zeros(self.dims, dtype=bool)
                 curr_voxels_teacher[

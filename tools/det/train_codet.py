@@ -31,7 +31,7 @@ def main(args):
     need_log = args.log
     num_workers = args.nworker
     start_epoch = 1
-    batch_size = args.batch
+    batch_size = args.batch_size
     compress_level = args.compress_level
     auto_resume_path = args.auto_resume_path
     pose_noise = args.pose_noise
@@ -42,40 +42,38 @@ def main(args):
     device_num = torch.cuda.device_count()
     print("device number", device_num)
 
-    if args.bound == "upperbound":
+    if args.com == "upperbound":
         flag = "upperbound"
-    elif args.bound == "lowerbound":
-        if args.com == "when2com" and args.warp_flag:
-            flag = "when2com_warp"
-        elif args.com in {
-            "v2v",
-            "disco",
-            "sum",
-            "mean",
-            "max",
-            "cat",
-            "agent",
-            "when2com",
-        }:
-            flag = args.com
-        else:
-            flag = "lowerbound"
+    elif args.com == "when2com" and args.warp_flag:
+        flag = "when2com_warp"
+    elif args.com in [
+        "lowerbound",
+        "v2v",
+        "disco",
+        "sum",
+        "mean",
+        "max",
+        "cat",
+        "agent",
+        "when2com",
+    ]:
+        flag = args.com
     else:
-        raise ValueError("not implement")
+        raise ValueError(f"com: {args.com} is not supported")
 
     config.flag = flag
 
     num_agent = args.num_agent
-    # agent0 is the cross road
-    agent_idx_range = range(1, num_agent) if args.no_cross_road else range(num_agent)
+    # agent0 is the RSU
+    agent_idx_range = range(num_agent) if args.rsu else range(1, num_agent)
     training_dataset = V2XSimDet(
         dataset_roots=[f"{args.data}/agent{i}" for i in agent_idx_range],
         config=config,
         config_global=config_global,
         split="train",
-        bound=args.bound,
+        bound="upperbound" if args.com == "upperbound" else "lowerbound",
         kd_flag=args.kd_flag,
-        no_cross_road=args.no_cross_road,
+        rsu=args.rsu,
     )
     training_data_loader = DataLoader(
         training_dataset, shuffle=True, batch_size=batch_size, num_workers=num_workers
@@ -84,10 +82,10 @@ def main(args):
 
     logger_root = args.logpath if args.logpath != "" else "logs"
 
-    if args.no_cross_road:
+    if not args.rsu:
         num_agent -= 1
 
-    if args.com == "":
+    if flag == "lowerbound" or flag == "upperbound":
         model = FaFNet(
             config,
             layer=args.layer,
@@ -95,7 +93,7 @@ def main(args):
             num_agent=num_agent,
             compress_level=compress_level,
         )
-    elif args.com == "when2com":
+    elif flag == "when2com" or flag == "when2com_warp":
         model = When2com(
             config,
             layer=args.layer,
@@ -104,7 +102,7 @@ def main(args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    elif args.com == "v2v":
+    elif flag == "v2v":
         model = V2VNet(
             config,
             gnn_iter_times=args.gnn_iter_times,
@@ -114,7 +112,7 @@ def main(args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    elif args.com == "disco":
+    elif flag == "disco":
         model = DiscoNet(
             config,
             layer=args.layer,
@@ -123,7 +121,7 @@ def main(args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    elif args.com == "sum":
+    elif flag == "sum":
         model = SumFusion(
             config,
             layer=args.layer,
@@ -132,7 +130,7 @@ def main(args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    elif args.com == "mean":
+    elif flag == "mean":
         model = MeanFusion(
             config,
             layer=args.layer,
@@ -141,7 +139,7 @@ def main(args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    elif args.com == "max":
+    elif flag == "max":
         model = MaxFusion(
             config,
             layer=args.layer,
@@ -150,7 +148,7 @@ def main(args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    elif args.com == "cat":
+    elif flag == "cat":
         model = CatFusion(
             config,
             layer=args.layer,
@@ -159,7 +157,7 @@ def main(args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    elif args.com == "agent":
+    elif flag == "agent":
         model = AgentWiseWeightedFusion(
             config,
             layer=args.layer,
@@ -168,8 +166,6 @@ def main(args):
             compress_level=compress_level,
             only_v2i=only_v2i,
         )
-    else:
-        raise NotImplementedError("Invalid argument com:" + args.com)
 
     model = nn.DataParallel(model)
     model = model.to(device)
@@ -198,18 +194,18 @@ def main(args):
     else:
         faf_module = FaFModule(model, model, config, optimizer, criterion, args.kd_flag)
 
-    cross_path = "no_cross" if args.no_cross_road else "with_cross"
+    rsu_path = "with_rsu" if args.rsu else "no_rsu"
     model_save_path = check_folder(logger_root)
     model_save_path = check_folder(os.path.join(model_save_path, flag))
 
-    if args.no_cross_road:
-        model_save_path = check_folder(os.path.join(model_save_path, "no_cross"))
+    if args.rsu:
+        model_save_path = check_folder(os.path.join(model_save_path, "with_rsu"))
     else:
-        model_save_path = check_folder(os.path.join(model_save_path, "with_cross"))
+        model_save_path = check_folder(os.path.join(model_save_path, "no_rsu"))
 
     # check if there is valid check point file
     has_valid_pth = False
-    for pth_file in os.listdir(os.path.join(auto_resume_path, f"{flag}/{cross_path}")):
+    for pth_file in os.listdir(os.path.join(auto_resume_path, f"{flag}/{rsu_path}")):
         if pth_file.startswith("epoch_") and pth_file.endswith(".pth"):
             has_valid_pth = True
             break
@@ -232,7 +228,7 @@ def main(args):
         saver.flush()
     else:
         if auto_resume_path != "":
-            model_save_path = os.path.join(auto_resume_path, f"{flag}/{cross_path}")
+            model_save_path = os.path.join(auto_resume_path, f"{flag}/{rsu_path}")
         else:
             model_save_path = args.resume[: args.resume.rfind("/")]
 
@@ -309,7 +305,7 @@ def main(args):
             if pose_noise > 0:
                 apply_pose_noise(pose_noise, trans_matrices)
 
-            if args.no_cross_road:
+            if not args.rsu:
                 num_all_agents -= 1
 
             if flag == "upperbound":
@@ -406,7 +402,7 @@ if __name__ == "__main__":
         type=str,
         help="The path to the preprocessed sparse BEV training data",
     )
-    parser.add_argument("--batch", default=4, type=int, help="Batch size")
+    parser.add_argument("--batch_size", default=4, type=int, help="Batch size")
     parser.add_argument("--nepoch", default=100, type=int, help="Number of epochs")
     parser.add_argument("--nworker", default=2, type=int, help="Number of workers")
     parser.add_argument("--lr", default=0.001, type=float, help="Initial learning rate")
@@ -431,7 +427,7 @@ if __name__ == "__main__":
         help="Communicate which layer in the single layer com mode",
     )
     parser.add_argument(
-        "--warp_flag", action="store_true", help="Whether to use pose info for Ｗhen2com"
+        "--warp_flag", default=0, type=int, help="Whether to use pose info for When2com"
     )
     parser.add_argument(
         "--kd_flag",
@@ -450,16 +446,12 @@ if __name__ == "__main__":
         "--visualization", default=True, help="Visualize validation result"
     )
     parser.add_argument(
-        "--com", default="", type=str, help="disco/when2com/v2v/sum/mean/max/cat/agent"
-    )
-    parser.add_argument(
-        "--bound",
+        "--com",
+        default="",
         type=str,
-        help="The input setting: lowerbound -> single-view or upperbound -> multi-view",
+        help="lowerbound/upperbound/disco/when2com/v2v/sum/mean/max/cat/agent",
     )
-    parser.add_argument(
-        "--no_cross_road", action="store_true", help="Do not load data of cross roads"
-    )
+    parser.add_argument("--rsu", default=0, type=int, help="0: no RSU, 1: RSU")
     parser.add_argument(
         "--num_agent", default=6, type=int, help="The total number of agents"
     )
