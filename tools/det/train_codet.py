@@ -285,16 +285,16 @@ def main(args):
         t = tqdm(training_data_loader)
         for sample in t:
             (
-                padded_voxel_point_list,
-                padded_voxel_points_teacher_list,
-                label_one_hot_list,
-                reg_target_list,
+                padded_voxel_point_list,  # voxelized point cloud for individual agent
+                padded_voxel_points_teacher_list,  # fused voxelized point cloud for all agents (multi-view)
+                label_one_hot_list,  # one hot labels
+                reg_target_list,  # regression targets
                 reg_loss_mask_list,
-                anchors_map_list,
+                anchors_map_list,  # anchor boxes
                 vis_maps_list,
                 target_agent_id_list,
-                num_agent_list,
-                trans_matrices_list,
+                num_agent_list,  # e.g. 6 agent in current scene: [6,6,6,6,6,6], 5 agent in current scene: [5,5,5,5,5,0]
+                trans_matrices_list,  # matrix for coordinate transformation. e.g. [batch_idx, j, i] ==> transformation matrix to transfer from agent i to j
             ) = zip(*sample)
 
             trans_matrices = torch.stack(tuple(trans_matrices_list), 1)
