@@ -1,6 +1,6 @@
 <div align="center">   
   
-## CoPerception
+# CoPerception
   <p align="center">
     SDK for collaborative perception.
   </p>
@@ -12,9 +12,9 @@
 [![GitHub stars](https://img.shields.io/github/stars/coperception/coperception.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/ai4ce/V2X-Sim/stargazers/)
 ---
 
-  <img src="https://raw.githubusercontent.com/yifanlu0227/v2xsim_vistool/master/gifs/scene_overview_Mixed.gif" width="600px"/>
+<img src="https://raw.githubusercontent.com/yifanlu0227/v2xsim_vistool/master/gifs/scene_overview_Mixed.gif" width="600px"/>
 
-  <img src="https://ai4ce.github.io/V2X-Sim/img/scene_72.gif" width="1000px"/>
+<img src="https://ai4ce.github.io/V2X-Sim/img/scene_72.gif" width="1000px"/>
 
 </div>
 
