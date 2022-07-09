@@ -68,6 +68,24 @@ make test com=who2com inference=argmax_test warp_flag=[0/1]
 make test_no_rsu com=who2com inference=argmax_test warp_flag=[0/1]
 ```
 
+- When2com with pose information
+```bash
+# with RSU
+make test_warp inference=activated
+
+# no RSU
+make test_warp_no_rsu inference=activated
+```
+
+- Who2com with pose information
+```bash
+# with RSU
+make test_warp inference=argmax_test
+
+# no RSU
+make test_warp_no_rsu inference=argmax_test
+```
+
 
 ## Results
 |  **Method**   | **AP@0.5 w/o RSU** | AP@0.5 w/ RSU | **Δ** | AP@0.7 w/o RSU | **AP@0.7 w/ RSU** |   Δ   |
