@@ -1,2 +1,3 @@
 jinja2==3.0.3
 mkdocstrings
+mkdocstrings-python-legacy
