@@ -44,6 +44,10 @@ See `./tools/det` and `./tools/seg` for model performance
 - [x] [V2X-Sim](https://ai4ce.github.io/V2X-Sim/)
 - [ ] [DAIR-V2X](https://thudair.baai.ac.cn/index) (coming soon)
 
+## Related works:
+- [DiscoNet Github repo](https://github.com/ai4ce/DiscoNet)
+- [V2X-Sim Github repo](https://github.com/ai4ce/V2X-Sim)
+
 ## Papers cited:
 DisoNet:
 ```
