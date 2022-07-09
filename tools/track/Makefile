@@ -26,6 +26,10 @@ det_logs_path := $(det_path)/logs_compress_0
 create_data:
 	python create_data_com.py --root $(original_data_path) --data $(det_data_path)/$(split) --split $(split) --from_agent $(from_agent) --to_agent $(to_agent) --scene_idxes_file $(scene_idxes_file)
 
+# needed by SORT codebase
+create_seqmaps:
+	python create_seqmaps.py --split $(split) --scene_idxes_file $(scene_idxes_file) --from_agent $(from_agent) --to_agent $(to_agent)
+
 sort:
 	cd sort && python sort.py --mode $(mode)/$(rsu) --split $(split) --from_agent $(from_agent) --to_agent $(to_agent) --scene_idxes_file $(scene_idxes_file) --det_logs_path $(det_logs_path)
 
