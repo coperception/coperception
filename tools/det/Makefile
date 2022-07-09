@@ -111,8 +111,6 @@ test:
 	--logpath $(logpath) \
 	--apply_late_fusion $(apply_late_fusion) \
 	--visualization $(visualization) \
-	--inference $(inference) \
-	--warp_flag $(warp_flag) \
 	--rsu 1
 
 test_no_rsu:
@@ -124,6 +122,30 @@ test_no_rsu:
 	--logpath $(logpath) \
 	--apply_late_fusion $(apply_late_fusion) \
 	--visualization $(visualization) \
-	--inference $(inference) \
-	--warp_flag $(warp_flag) \
 	--rsu 0
+
+test_warp:
+	python $(testing_script) \
+	--data $(testing_data) \
+	--com when2com \
+	--resume $(logpath)/when2com_warp/with_rsu/epoch_$(nepoch).pth \
+	--tracking \
+	--logpath $(logpath) \
+	--apply_late_fusion $(apply_late_fusion) \
+	--visualization $(visualization) \
+	--rsu 1 \
+	--inference $(inference) \
+	--warp_flag 1
+
+test_warp_no_rsu:
+	python $(testing_script) \
+	--data $(testing_data) \
+	--com when2com \
+	--resume $(logpath)/when2com_warp/no_rsu/epoch_$(nepoch).pth \
+	--tracking \
+	--logpath $(logpath) \
+	--apply_late_fusion $(apply_late_fusion) \
+	--visualization $(visualization) \
+	--rsu 0 \
+	--inference $(inference) \
+	--warp_flag 1
