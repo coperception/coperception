@@ -24,6 +24,13 @@ If conda installation failed, install the dependencies through pip:
 pip install -r requirements.txt
 ```
 
-### 2. CUDA support
+### 2. CoPerception library
+Use pip to install `coperception` library:
+```bash
+pip install -e .
+```
+This installs and links `coperception` library to code in `./coperception` directory.
+
+### 3. CUDA support
 Coperception requires CUDA to run on the GPU.  
 Go to PyTorch's [installation documentation](https://pytorch.org/get-started/locally/) to set up CUDA and PyTorch.

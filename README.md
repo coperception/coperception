@@ -1,12 +1,22 @@
 <div align="center">   
   
 ## CoPerception
- <p align="center">
+  <p align="center">
     SDK for collaborative perception.
-</p>
-</div>
+  </p>
 
+[![Documentation Status](https://readthedocs.org/projects/coperception/badge/?version=latest)](https://coperception.readthedocs.io/en/latest/?badge=latest)
+![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?logo=PyTorch&logoColor=white)
+[![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
+[![GitLab issues total](https://badgen.net/github/issues/coperception/coperception)](https://gitlab.com/ai4ce/V2X-Sim/issues)
+[![GitHub stars](https://img.shields.io/github/stars/coperception/coperception.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/ai4ce/V2X-Sim/stargazers/)
 ---
+
+  <img src="https://raw.githubusercontent.com/yifanlu0227/v2xsim_vistool/master/gifs/scene_overview_Mixed.gif" width="600px"/>
+
+  <img src="https://ai4ce.github.io/V2X-Sim/img/scene_72.gif" width="1000px"/>
+
+</div>
 
 ## Install:
 1. Clone this repository.
@@ -17,7 +27,6 @@
     ```
 
 ## Docs:
-[![Documentation Status](https://readthedocs.org/projects/coperception/badge/?version=latest)](https://coperception.readthedocs.io/en/latest/?badge=latest)  
 Please refer to our docs website for detailed documentations:
 https://coperception.readthedocs.io/en/latest/ 
 
@@ -26,6 +35,14 @@ https://coperception.readthedocs.io/en/latest/
 - [V2VNet](https://arxiv.org/abs/2008.07519)
 - [When2com](https://arxiv.org/abs/2006.00176)
 - [Who2com](https://arxiv.org/abs/2003.09575)
+
+Download checkpoints: [Google Drive (US)](https://drive.google.com/drive/folders/1NMag-yZSflhNw4y22i8CHTX5l8KDXnNd)  
+See `./tools/det` and `./tools/seg` for model performance
+
+## Supported datasets:
+
+- [x] [V2X-Sim](https://ai4ce.github.io/V2X-Sim/)
+- [ ] [DAIR-V2X](https://thudair.baai.ac.cn/index) (coming soon)
 
 ## Papers cited:
 DisoNet:

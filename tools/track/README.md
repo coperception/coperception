@@ -4,13 +4,16 @@ Here we implements the sort algorithm as our benchmark trackers and use the dete
 
 ## Preparation
 - Download V2XSIM datasets from our [website](https://ai4ce.github.io/V2X-Sim/index.html)
-- Add nuscenes-devkit dependency: ```export PYTHONPATH=nuscenes-devkit/python-sdk/:PYTHONPATH```
 - Prepare tracking ground truth:
 ```bash
 make create_data
 ```
 - You might want to consult `./Makefile` for all the arguments you can pass in
 
+Create seqmaps (required by the SORT codebase):
+```base
+make create_seqmaps
+```
 
 
 ## Evaluation
@@ -25,12 +28,9 @@ make sort
 Evaluate tracking results:
 
 ```bash
-# Evaludate MOTA, MOTP
-make eval1
-
-# Evaludate other matrics
-make eval2
+make eval
 ```
+- Results will be stored in `./logs` directory.  
 - You might want to consult `./Makefile` for all the arguments you can pass in
 
 

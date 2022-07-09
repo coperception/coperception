@@ -1,43 +1,24 @@
-# Segmentation
+## Segmentation
 
-
-We implement lowerbound, upperbound, when2com, who2com, V2VNet as our benchmark segmentation methods. Please see more details in our paper.  
-You can find and configure all the arguments for the program in the `tools/seg/Makefile` file.
-
+We implement lowerbound, upperbound, when2com, who2com, V2VNet as our benchmark segmentation methods. Please see more details in our paper.
 
 ## Preparation
 
-Choose one of our supported datasets, for example, [V2X-Sim](/datasets/v2x_sim), and perform its data preparation steps based on our documentation.
+- Download V2XSIM datasets from our [website](https://ai4ce.github.io/V2X-Sim/index.html)
+- Run the code below to generate preprocessed data
+
+```bash
+make_create_data
+```
+- You might want to consult `./Makefile` for all the arguments you can pass in
+
 
 ## Training
 
-Train benchmark segmentation methods:  
-
-- Lowerbound
+Train benchmark detectors:
+- Lowerbound / Upperbound / V2VNet / When2Com
 ```bash
-# lowerbound
-make train_bound bound=lowerbound
-
-# lowerbound with out cross road (RSU)
-make train_bound_nc bound=lowerbound
-```
-
-- Upperbound
-```bash
-# upperbound
-make train_bound bound=upperbound
-
-# lowerbound with out cross road (RSU) data
-make train_bound_nc bound=upperbound
-```
-
-- V2VNet
-```bash
-# V2V
-make train com=v2v
-
-# V2V with no cross road (RSU) data
-make train_nc com=v2v
+make train com=[lowerbound/upperbound/v2v/when2com] rsu=[0/1]
 ```
 
 - DiscoNet
@@ -46,111 +27,57 @@ make train_nc com=v2v
 make train_disco
 
 # DiscoNet with no cross road (RSU) data
-make train_disco_nc
-```
-
-- When2com
-```bash
-# When2com
-make train com=when2com
-
-# When2com with no cross road (RSU) data
-make train_nc com=when2com
+make train_disco_no_rsu
 ```
 
 - When2com_warp
 ```bash
 # When2com_warp
-make train_warp com=when2com
-
-# When2com_warp with no cross road (RSU) data
-make train_warp_nc com=when2com
+make train com=when2com warp_flag=1 rsu=[0/1]
 ```
 
 - Note: Who2com is trained the same way as When2com. They only differ in inference.
 
 ## Evaluation
 
-Evaluate benchmark segmentation methods
+Evaluate benchmark detectors:
+
+- Lowerbound
 ```bash
-# lowerbound
-make test_bound bound=lowerbound
+# with RSU
+make test com=[lowerbound/upperbound/v2v/when2com/who2com]
 
-# lowerbound with no cross road (RSU) data
-make test_bound_nc bound=lowerbound
-```
-
-- Upperbound
-```bash
-# upperbound
-make test_bound bound=upperbound
-
-# upperbound with no cross road (RSU) data
-make test_bound_nc bound=upperbound
-```
-- V2VNet
-```bash
-# V2V
-make test com=v2v
-
-# V2V with no cross road (RSU) data
-make test_nc com=v2v
-```
-
-- DiscoNet
-```bash
-# DiscoNet
-make test com=disco
-
-# DiscoNet with no cross road (RSU) data
-make test_nc com=disco
+# no RSU
+make test_no_rsu com=[lowerbound/upperbound/v2v/when2com/who2com]
 ```
 
 - When2com
 ```bash
-# When2com
-make test_w inference=activated
+# with RSU
+make test com=when2com inference=activated warp_flag=[0/1]
 
-# When2com with no cross road (RSU) data
-make test_w_nc inference=activated
-```
-
-- When2com_warp
-```bash
-# When2com_warp
-make test_warp inference=activated
-
-# When2com_warp with no cross road (RSU) data
-make test_warp_nc inference=activated
+# no RSU
+make test_no_rsu com=when2com inference=activated warp_flag=[0/1]
 ```
 
 - Who2com
 ```bash
-# Who2com
-make test_w inference=argmax_test
+# with RSU
+make test com=who2com inference=argmax_test warp_flag=[0/1]
 
-# Who2com with no cross road (RSU) data
-make test_w_nc inference=argmax_test
-```
-
-- Who2com_warp
-```bash
-# Who2com
-make test_warp inference=argmax_test
-
-# Who2com with no cross road (RSU) data
-make test_w_nc inference=argmax_test
+# no RSU
+make test_no_rsu com=who2com inference=argmax_test warp_flag=[0/1]
 ```
 ## Results
 
-| **Method**    | **Vehicle**   | **Sidewalk**  | **Terrain**   | **Road**      | **Building**  | **Pedestrian** | **Vegetation** |   **mIoU**    |
-| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | -------------- | -------------- | :-----------: |
-| Lower-bound   | 57.48 (+2.97) | 83.43 (+3.16) | 81.70 (+2.83) | 89.73 (+1.42) | 80.93 (+2.82) | 25.98 (+0.35)  | 74.29 (+4.00)  | 70.51 (+2.51) |
-| When2com      | 58.44 (+3.56) | 65.46 (+4.05) | 62.29 (+3.30) | 80.79 (+2.08) | 61.31 (+3.59) | 27.28 (-1.70)  | 60.04 (+3.72)  | 59.37 (+2.66) |
-| When2com_warp | 58.64 (+3.15) | 62.21 (+8.58) | 60.24 (+6.12) | 79.57 (+3.69) | 59.29 (+6.30) | 26.36 (-2.28)  | 59.43 (+6.19)  | 57.96 (+4.54) |
-| Who2com       | 58.63 (+3.37) | 62.57 (+6.94) | 59.62 (+5.97) | 80.08 (+2.80) | 59.00 (+5.91) | 26.60 (-1.02)  | 59.09 (+4.67)  | 57.94 (+4.09) |
-| Who2com_warp  | 58.64 (+3.15) | 62.21 (+8.58) | 60.24 (+6.12) | 79.57 (+3.69) | 59.29 (+6.29) | 26.36 (-2.28)  | 59.43 (+6.19)  | 57.96 (+4.53) |
-| V2VNet        | 67.83 (+4.69) | 84.43 (+3.87) | 81.83 (+4.62) | 91.76 (+2.36) | 75.95 (+4.15) | 26.70 (+2.45)  | 74.95 (+4.30)  | 72.49 (+3.78) |
-| DiscoNet      | 66.88 (+3.30) | 81.80 (+1.21) | 79.68 (+0.56) | 90.80 (+1.01) | 80.16 (-1.99) | 28.79 (+0.19)  | 72.92 (-0.04)  | 71.58 (+0.61) |
-| Upper-bound   | 73.13 (+4.26) | 84.60 (+7.31) | 83.72 (+3.08) | 92.68 (+1.59) | 81.45 (+3.95) | 35.23 (+2.03)  | 77.34 (+2.78)  | 75.45 (+3.14) |
-
+|   **Method**   |  **Vehicle**  | **Sidewalk**  |  **Terrain**  |    **Road**    | **Building**  | **Pedestrian** | **Vegetation** |   **mIoU**    |
+| :------------: | :-----------: | :-----------: | :-----------: | :------------: | :-----------: | :------------: | :------------: | :-----------: |
+|  Lower-bound   | 45.93 (+2.22) | 42.39 (-2.75) | 47.03 (+0.20) | 65.76 (-1.27)  | 25.38 (-1.89) | 20.59 (-3.09)  | 35.83 (+0.66)  | 36.64 (-0.87) |
+| Co-lower-bound | 47.67 (+2.43) | 48.79 (-1.41) | 50.92 (+0.85) | 70.00 (-0.65)  | 25.26 (+0.17) | 10.78 (-1.77)  | 39.46 (+2.69)  | 38.38 (+0.46) |
+|    When2com    | 48.43 (+0.03) | 33.06 (+1.38) | 36.89 (+1.76) | 57.74 (+1.56)  | 29.20 (+1.18) | 20.37 (+0.57)  | 39.17 (-0.01)  | 34.49 (+0.88) |
+|   When2com*    | 47.74 (+1.23) | 33.60 (-0.40) | 35.81 (+1.05) | 56.75  (+0.48) | 26.11 (-0.92) | 19.16 (+0.04)  | 39.64 (-2.55)  | 33.81 (-0.47) |
+|    Who2com     | 48.40 (+0.06) | 32.76 (+1.68) | 36.04 (+2.61) | 57.51 (+1.79)  | 29.17 (+1.21) | 20.36 (+0.58)  | 39.08 (+0.08)  | 34.31 (+1.06) |
+|    Who2com*    | 47.74 (+1.23) | 33.60 (-0.40) | 35.81 (+1.05) | 56.75 (+0.48)  | 26.11 (-0.92) | 19.16 (+0.04)  | 39.64 (-2.55)  | 33.81 (-0.47) |
+|     V2VNet     | 58.42 (+3.09) | 48.33 (-3.87) | 48.51 (-1.59) | 70.02 (+0.46)  | 28.58 (+5.18) | 21.99 (+0.57)  | 41.42 (+0.35)  | 41.11 (+0.74) |
+|    DiscoNet    | 56.66 (+1.19) | 46.98 (-1.74) | 50.22 (-1.05) | 68.62 (-0.25)  | 27.36 (+5.58) | 22.02 (-0.82)  | 42.50 (+0.95)  | 40.84 (+0.53) |
+|  Upper-bound   | 64.09 (+5.34) | 41.34 (+2.42) | 48.20 (+0.74) | 67.05 (+2.04)  | 29.07 (+0.74) | 31.54 (+3.15)  | 45.04 (+0.70)  | 42.29 (+1.98) |
