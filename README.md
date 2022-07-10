@@ -37,7 +37,7 @@ https://coperception.readthedocs.io/en/latest/
 - [Who2com](https://arxiv.org/abs/2003.09575)
 
 Download checkpoints: [Google Drive (US)](https://drive.google.com/drive/folders/1NMag-yZSflhNw4y22i8CHTX5l8KDXnNd)  
-See `./tools/det` and `./tools/seg` for model performance
+See `README.md` in `./tools/det`, `./tools/seg`, and `./tools/track` for model performance under different tasks.
 
 ## Supported datasets:
 
