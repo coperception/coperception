@@ -1,10 +1,28 @@
-## Tracking
+# Tracking
 
-We used the [sort algorithm](https://github.com/abewley/sort) as our benchmark trackers and use the detection results obtained from our detection task to evaluate.
-You can find and configure all the arguments for the program in the `tools/seg/Makefile` file.
+Here we implements the sort algorithm as our benchmark trackers and use the detection results obtained from [here](../det) to evaluate.
 
 ## Preparation
-Choose one of our supported datasets, for example, [V2X-Sim](/datasets/v2x_sim), and perform its data preparation steps based on our documentation.
+- Download V2XSIM datasets from our [website](https://ai4ce.github.io/V2X-Sim/index.html)
+- Prepare tracking ground truth:
+```bash
+make create_data
+```
+You might want to consult `./Makefile` for all the arguments you can pass in.  
+For example, the target for `create_data` is:
+```bash
+create_data:
+	python create_data_com.py --root $(original_data_path) --data $(det_data_path)/$(split) --split $(split) --from_agent $(from_agent) --to_agent $(to_agent) --scene_idxes_file $(scene_idxes_file)
+```
+You should at least set `original_data_path` to the path of V2X-Sim dataset on your machine, and `det_data_path` to the path of the preprocessed detection dataset.  
+You can set the variables at the top of `Makefile`, or you can pass them in as arguments.  
+For other arguments, please see the comments in `Makefile`.  
+
+Create seqmaps (required by the SORT codebase):
+```base
+make create_seqmaps
+```
+
 
 ## Evaluation
 
@@ -12,28 +30,29 @@ Run a tracker:
 ```bash
 make sort
 ```
+- You might want to consult `./Makefile` for all the arguments you can pass in
+
 
 Evaluate tracking results:
 
 ```bash
-# Evaludate MOTA, MOTP
-make eval1
-
-# Evaludate other matrics
-make eval2
+make eval
 ```
+- Results will be stored in `./logs` directory.  
+- You might want to consult `./Makefile` for all the arguments you can pass in
+
+
 
 ## Results
 
-|  **Method**   | **MOTA**      | **MOTP**      | **HOTA**      | **DetA**      | **AssA**      | **DetRe**     | **DetPr**     | **AssRe**     | **AssPr**     | **LocA**      |
-| :-----------: | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
-|  Lower-bound  | 39.25 (+3.83) | 85.04 (-1.05) | 34.29 (+1.44) | 40.46 (+2.51) | 30.44 (+0.65) | 43.26 (+2.57) | 79.31 (+0.12) | 40.40 (+1.11) | 53.26 (-0.43) | 86.87 (-0.94) |
-|   When2com    | 39.72 (+3.86) | 85.13 (-1.40) | 33.61 (+2.61) | 39.27 (+4.02) | 30.11 (+1.10) | 41.29 (+4.84) | 85.24 (-2.81) | 39.91 (+1.48) | 53.72 (-0.65) | 87.11 (-1.19) |
-| When2com_warp | 40.13 (+2.76) | 83.87 (-0.08) | 34.16 (+0.74) | 40.89 (+1.20) | 30.20 (+0.19) | 42.88 (+1.82) | 79.76 (+0.43) | 40.28 (+0.29) | 52.98 (+0.14) | 85.99 (+0.01) |
-|    Who2com    | 39.72 (+3.85) | 85.13 (+1.68) | 33.61 (+2.61) | 39.27 (+4.01) | 30.12 (+1.10) | 41.29 (+4.88) | 82.23 (-2.82) | 39.91 (+1.48) | 53.72 (-0.65) | 87.11 (-1.19) |
-| Who2com_warp  | 40.13 (+2.77) | 83.87 (-0.09) | 34.16 (+0.74) | 40.28 (+1.80) | 30.20 (+0.19) | 42.87 (+1.83) | 79.76 (+0.44) | 40.28 (+0.29) | 52.98 (+0.14) | 86.00 (+0.01) |
-|    V2VNet     | 58.11 (+4.34) | 85.23 (-0.08) | 42.41 (+1.64) | 55.83 (+3.52) | 33.31 (+0.45) | 58.79 (+3.93) | 84.68 (-0.05) | 44.10 (+0.77) | 54.04 (-0.49) | 87.05 (+0.05) |
-|   DiscoNet    | 58.51 (+4.26) | 85.53 (+0.32) | 42.34 (+2.29) | 56.72 (+3.80) | 32.65 (+1.31) | 60.08 (+3.78) | 84.52 (+1.02) | 43.63 (+1.62) | 53.88 (-0.23) | 87.33 (+0.21) |
-|  Upper-bound  | 61.31 (+5.58) | 86.00 (-1.08) | 43.12 (+2.62) | 58.77 (+4.43) | 32.55 (+1.51) | 61.22 (+5.35) | 86.65 (-1.36) | 43.25 (+1.77) | 53.56 (-0.11) | 87.68 (-0.86) |
-
-
+|   **Method**   | **MOTA**      | **MOTP**      | **HOTA**      | **DetA**      | **AssA**      | **DetRe**     | **DetPr**     | **AssRe**     | **AssPr**     | **LocA**      |
+| :------------: | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+|  Lower-bound   | 35.72 (-3.87) | 84.16 (-0.74) | 34.27 (-1.68) | 33.64 (-3.24) | 36.18 (-0.06) | 35.07 (-3.54) | 82.49 (+0.96) | 46.70 (+0.23) | 58.72 (+0.10) | 86.43 (+0.38) |
+| Co-lower-bound | 21.53 (+0.58) | 85.76 (+0.15) | 39.16 (-0.71) | 41.14 (-0.93) | 38.18 (-0.62) | 59.54 (-2.52) | 54.68 (+0.79) | 50.92 (-0.65) | 55.78 (+0.84) | 87.64 (+0.38) |
+|    When2com    | 29.48 (+2.45) | 86.10 (-2.79) | 30.94 (+1.01) | 27.90 (+2.04) | 35.33 (+0.06) | 28.67 (+2.58) | 86.11 (-4.81) | 46.30 (-0.15) | 59.20 (-0.36) | 87.98 (-1.98) |
+|   When2com*    | 30.17 (+1.43) | 84.95 (-1.44) | 31.34 (+0.43) | 29.11 (+1.05) | 35.42 (+0.21) | 30.28 (+1.32) | 83.81 (+0.29) | 46.65 (-0.29) | 58.61 (+0.18) | 86.14 (+0.17) |
+|    Who2com     | 29.48 (+2.46) | 86.10 (-2.79) | 30.94 (+1.01) | 27.90 (+2.04) | 35.33 (+0.06) | 28.67 (+2.58) | 86.11 (-4.81) | 46.30 (-0.15) | 59.20 (-0.36) | 87.98 (-1.98) |
+|    Who2com*    | 30.17 (+1.43) | 84.95 (-1.44) | 31.34 (+0.43) | 29.11 (+1.06) | 35.42 (+0.21) | 30.28 (+1.33) | 83.81 (+0.29) | 46.65 (-0.29) | 58.61 (+0.81) | 86.14 (+0.17) |
+|     V2VNet     | 55.29 (+2.29) | 85.21 (-0.53) | 43.68 (+0.91) | 50.71 (+1.93) | 38.76 (+0.24) | 53.40 (+2.51) | 84.45 (-1.07) | 50.22 (+0.53) | 58.50 (-0.07) | 87.22 (+0.38) |
+|    DiscoNet    | 56.69 (+2.26) | 86.23 (-0.41) | 44.76 (+1.09) | 52.41 (+2.18) | 39.25 (+1.11) | 54.87 (+2.58) | 86.29 (-0.95) | 50.86 (+1.02) | 58.94 (-0.15) | 88.07 (+0.34) |
+|  Upper-bound   | 58.00 (+3.92) | 85.61 (+0.25) | 44.83 (+4.24) | 52.94 (+4.24) | 38.95 (-0.75) | 55.07 (+4.68) | 86.54 (-0.30) | 50.35 (-0.86) | 58.71 (+0.15) | 87.48 (+0.06) |

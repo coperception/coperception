@@ -1,4 +1,4 @@
-## Segmentation benchmark on V2XSIM
+# Segmentation benchmark on V2XSIM
 
 We implement lowerbound, upperbound, when2com, who2com, V2VNet as our benchmark segmentation methods. Please see more details in our paper.
 
@@ -10,7 +10,22 @@ We implement lowerbound, upperbound, when2com, who2com, V2VNet as our benchmark 
 ```bash
 make_create_data
 ```
-- You might want to consult `./Makefile` for all the arguments you can pass in
+You might want to consult `./Makefile` for all the arguments you can pass in.  
+For example, the target for `create_data` is:
+```bash
+create_data:
+	python create_data_det.py \
+	--root $(original_data_path) \
+	--split $(split) \
+	--scene_begin $(scene_begin) \
+	--scene_end $(scene_end) \
+	--savepath $(create_data_save_path) \
+	--from_agent $(from_agent) \
+	--to_agent $(to_agent)
+```
+You should at least set `original_data_path` to the path of V2X-Sim dataset on your machine, and `create_data_save_path` to the path of the folder where you want to save the preprocessed data.  
+You can set the variables at the top of `Makefile`, or you can pass them in as arguments.  
+For other arguments, please see the comments in `Makefile`.
 
 
 ## Training
