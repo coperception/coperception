@@ -22,13 +22,22 @@
 1. Clone this repository.
 2. `cd` into the cloned repository.
 3. Install `coperception` package with pip:
-    ```bash
-    pip install -e .
-    ```
+  ```bash
+  pip install -e .
+  ```
 
-## Docs:
-Please refer to our docs website for detailed documentations:
-https://coperception.readthedocs.io/en/latest/ 
+## Getting started:
+Please refer to our docs website for detailed documentations: https://coperception.readthedocs.io/en/latest/  
+Installation:
+- [Installation documentations](https://coperception.readthedocs.io/en/latest/getting_started/installation/)
+
+Download dataset:
+- [V2X-Sim](https://coperception.readthedocs.io/en/latest/datasets/v2x_sim/)
+
+How to run the following tasks:
+- [Detection](https://coperception.readthedocs.io/en/latest/tools/det/)
+- [Segmentation](https://coperception.readthedocs.io/en/latest/tools/seg/)
+- [Tracking](https://coperception.readthedocs.io/en/latest/tools/track/)
 
 ## Supported models:
 - [DiscoNet](https://arxiv.org/abs/2111.00643)
@@ -48,7 +57,17 @@ See `README.md` in `./tools/det`, `./tools/seg`, and `./tools/track` for model p
 - [DiscoNet Github repo](https://github.com/ai4ce/DiscoNet)
 - [V2X-Sim Github repo](https://github.com/ai4ce/V2X-Sim)
 
-## Papers cited:
+## Related papers:
+V2X-Sim dataset:
+```
+@article{Li_2021_RAL,
+    title = {V2X-Sim: A Virtual Collaborative Perception Dataset and Benchmark for Autonomous Driving},
+    author = {Li, Yiming and Ma, Dekun and An, Ziyan and Wang, Zixun and Zhong, Yiqi and Chen, Siheng and Feng, Chen},
+    booktitle = {IEEE Robotics and Automation Letters},
+    year = {2022}
+}
+```
+
 DisoNet:
 ```
 @article{li2021learning,
