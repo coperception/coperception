@@ -8,8 +8,8 @@
 [![Documentation Status](https://readthedocs.org/projects/coperception/badge/?version=latest)](https://coperception.readthedocs.io/en/latest/?badge=latest)
 ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?logo=PyTorch&logoColor=white)
 [![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
-[![GitLab issues total](https://badgen.net/github/issues/coperception/coperception)](https://gitlab.com/ai4ce/V2X-Sim/issues)
-[![GitHub stars](https://img.shields.io/github/stars/coperception/coperception.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/ai4ce/V2X-Sim/stargazers/)
+[![GitLab issues total](https://badgen.net/github/issues/coperception/coperception)](https://gitlab.com/coperception/coperception/issues)
+[![GitHub stars](https://img.shields.io/github/stars/coperception/coperception.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/coperception/coperception/stargazers/)
 ---
 
 <img src="https://raw.githubusercontent.com/yifanlu0227/v2xsim_vistool/master/gifs/scene_overview_Mixed.gif" width="600px"/>
