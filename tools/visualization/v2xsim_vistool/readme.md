@@ -28,12 +28,12 @@ Then you can use `img2video.py` to make image sequence to video.
 python visualize_data_seq.py
 ```
 Result:
-![](vis_seq/3d_00000.png "3d_00000")
-![](vis_seq/bev_00000.png "bev_00000")
+![3d_00000](https://user-images.githubusercontent.com/53892579/190858420-d0e90a45-139c-4bd2-bfc1-9d55e0498230.png)
+![bev_00000](https://user-images.githubusercontent.com/53892579/190858428-f5afe1e2-0446-44ac-a022-c5b4f898763b.png)
 
 
 GIFs are shown as below:
-![](gifs/single_view_agent1.gif "single_view_agent1")
-![](gifs/collaboration_view_agent1.gif "collaboration_view_agent1")
-![](gifs/scene_overview_Mixed.gif "scene_overview")
-![](gifs/location_in_bev.gif "location_in_bev")
+![single_view_agent1](https://user-images.githubusercontent.com/53892579/190858435-4bdc55ae-2144-4eda-a3ef-87beae2e5d0d.gif)
+![collaboration_view_agent1](https://user-images.githubusercontent.com/53892579/190858456-3ed721f1-4ed7-4b75-a3de-9541c2925561.gif)
+![scene_overview_Mixed](https://user-images.githubusercontent.com/53892579/190858478-ee9bfe45-3378-4340-bc13-52b20541a1b7.gif)
+![location_in_bev](https://user-images.githubusercontent.com/53892579/190858483-677e6036-5c43-4adc-aef2-ceaebb66e2f3.gif)
