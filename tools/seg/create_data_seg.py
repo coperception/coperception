@@ -4,13 +4,14 @@ import os
 
 import cv2
 
-from coperception.configs import Config, ConfigGlobal
+from coperception.configs import Config
 from coperception.utils.nuscenes_pc_util import (
     from_file_multisweep_upperbound_sample_data,
     from_file_multisweep_warp2com_sample_data,
 )
 from coperception.utils.data_util import voxelize_occupy
 from coperception.utils.obj_util import *
+from coperception.utils.v2x_sim_scene_split.parser import parse_scene_files
 
 from nuscenes import NuScenes
 
@@ -22,16 +23,31 @@ def check_folder(folder_name):
 
 
 # ---------------------- Extract the scenes, and then pre-process them into BEV maps ----------------------
-def create_data(config, nusc, current_agent, config_global, scene_begin, scene_end):
+def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_savepath):
     channel = "LIDAR_TOP_id_" + str(current_agent)
     channel_bev = "BEV_TOP_id_" + str(current_agent)
     total_sample = 0
-
     res_scenes = range(100)
+
+    config = Config(
+        'SPLIT', True, is_cross_road=current_agent == 0
+    )
+
     for scene_idx in res_scenes[scene_begin:scene_end]:
         curr_scene = nusc.scene[scene_idx]
         first_sample_token = curr_scene["first_sample_token"]
         curr_sample = nusc.get("sample", first_sample_token)
+        split = None
+        for s in ['train', 'val', 'test']:
+            if scene_idx in scene_splits[s]:
+                split = s
+                config.split = s
+        
+        if not split:
+            raise Exception(f'There is no scene {scene_idx} in the dataset.')
+
+        savepath = os.path.join(args_savepath, split, "agent" + str(current_agent))
+        os.makedirs(savepath, exist_ok=True)
 
         # Iterate each sample data
         print("Processing scene {} of agent {} ...".format(scene_idx, current_agent))
@@ -49,7 +65,7 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
             for num_sample in range(100):
                 save_directory = check_folder(
                     os.path.join(
-                        config.savepath, str(scene_idx) + "_" + str(num_sample)
+                        savepath, str(scene_idx) + "_" + str(num_sample)
                     )
                 )
                 save_file_name = os.path.join(save_directory, "0.npy")
@@ -147,7 +163,7 @@ def create_data(config, nusc, current_agent, config_global, scene_begin, scene_e
 
             # save the data
             save_directory = check_folder(
-                os.path.join(config.savepath, str(scene_idx) + "_" + str(save_seq_cnt))
+                os.path.join(savepath, str(scene_idx) + "_" + str(save_seq_cnt))
             )
             save_file_name = os.path.join(save_directory, str(seq_idx) + ".npy")
             np.save(save_file_name, arr=sparse_bev_data)
@@ -261,17 +277,10 @@ if __name__ == "__main__":
         help="Root path to nuScenes dataset",
     )
     parser.add_argument(
-        "-s",
-        "--split",
-        default="train",
-        type=str,
-        help="The data split [train/val/test]",
-    )
-    parser.add_argument(
         "-b", "--scene_begin", default=0, type=int, help="Index of begining scene"
     )
     parser.add_argument(
-        "-e", "--scene_end", default=1, type=int, help="Index of end scene + 1"
+        "-e", "--scene_end", default=100, type=int, help="Index of end scene + 1"
     )
     parser.add_argument(
         "-p",
@@ -295,11 +304,9 @@ if __name__ == "__main__":
     scene_begin = args.scene_begin
     scene_end = args.scene_end
 
-    root = os.path.join(args.savepath, args.split)
+    scene_files_loc = '../../coperception/utils/v2x_sim_scene_split'
+    scene_splits = parse_scene_files(scene_files_loc)
+
+    print(f'Parsed files will be saved to {args.savepath}')
     for current_agent in range(args.from_agent, args.to_agent):
-        savepath = check_folder(os.path.join(root, "agent" + str(current_agent)))
-        config = Config(
-            args.split, True, savepath=savepath, is_cross_road=current_agent == 0
-        )
-        config_global = ConfigGlobal(args.split, True, savepath=savepath)
-        create_data(config, nusc, current_agent, config_global, scene_begin, scene_end)
+        create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args.savepath)

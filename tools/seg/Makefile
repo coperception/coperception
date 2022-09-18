@@ -21,8 +21,6 @@ testing_data := $(create_data_save_path)/test
 # [lowerbound / upperbound / v2v / disco / when2com / max / mean / sum / agent]
 com := lowerbound
 batch_size := 4
-# [train / test / val]
-split := train
 
 logpath := logs
 # Train for how many epochs
@@ -50,7 +48,6 @@ apply_late_fusion := 0
 create_data: 
 	python create_data_seg.py \
 	--root $(original_data_path) \
-	--split $(split) \
 	--scene_begin $(scene_begin) \
 	--scene_end $(scene_end) \
 	--savepath $(create_data_save_path) \

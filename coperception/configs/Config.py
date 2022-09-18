@@ -12,7 +12,6 @@ class Config(object):
         only_det=True,
         code_type="faf",
         loss_type="faf_loss",
-        savepath="",
         root="",
         is_cross_road=False,
         use_vis=False,
@@ -66,7 +65,6 @@ class Config(object):
 
         self.device = None
         self.split = split
-        self.savepath = savepath
         self.binary = binary
         self.only_det = only_det
         self.code_type = code_type
