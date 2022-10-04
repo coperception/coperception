@@ -24,21 +24,26 @@ def check_folder(folder_path):
 
 @torch.no_grad()
 def main(config, args):
-    config.nepoch = args.nepoch
     batch_size = args.batch_size
     num_workers = args.nworker
     logpath = args.logpath
     pose_noise = args.pose_noise
     compress_level = args.compress_level
     only_v2i = args.only_v2i
+    
+    config.nepoch = args.nepoch
+    config.com = args.com
+    config.inference = args.inference
+    config.split = "test"
 
     # Specify gpu device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device_num = torch.cuda.device_count()
     print("device number", device_num)
 
-    if args.com == "upperbound":
-        flag = "upperbound"
+    if args.com == "upperbound" or args.com == "lowerbound":
+        flag = args.com
+        config.com = None
     elif args.com == "when2com":
         flag = "when2com"
         if args.inference == "argmax_test":
@@ -47,12 +52,10 @@ def main(config, args):
             flag = flag + "_warp"
     elif args.com in {"v2v", "disco", "sum", "mean", "max", "cat", "agent"}:
         flag = args.com
-    elif args.com == "lowerbound":
-        flag = "lowerbound"
-        if args.box_com:
-            flag += "_box_com"
     else:
         raise ValueError(f"com: {args.com} is not supported")
+    
+    config.flag = flag
 
     num_agent = args.num_agent
     agent_idx_range = range(num_agent) if args.rsu else range(1, num_agent)
@@ -72,10 +75,6 @@ def main(config, args):
 
     checkpoint = torch.load(args.resume)
 
-    config.flag = flag
-    config.com = args.com
-    config.inference = args.inference
-    config.split = "test"
     # build model
     if not args.rsu:
         num_agent -= 1
