@@ -12,7 +12,7 @@ from coperception.utils.nuscenes_pc_util import (
     get_instance_boxes_multisweep_sample_data
 )
 from coperception.utils.v2x_sim_scene_split.parser import parse_scene_files
-from nuscenes import NuScenes
+from nuscenes import NuScenes as CoPerceptionDataset
 
 def check_folder(folder_name):
     os.makedirs(folder_name, exist_ok=True)
@@ -20,7 +20,7 @@ def check_folder(folder_name):
 
 
 # ---------------------- Extract the scenes, and then pre-process them into BEV maps ----------------------
-def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_savepath):
+def create_data(coperception_dataset, current_agent, scene_begin, scene_end, scene_splits, args_savepath):
     channel = "LIDAR_TOP_id_" + str(current_agent)
     total_sample = 0
     res_scenes = range(100)
@@ -30,7 +30,7 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
     )
 
     for scene_idx in res_scenes[scene_begin:scene_end]:
-        curr_scene = nusc.scene[scene_idx]
+        curr_scene = coperception_dataset.scene[scene_idx]
         split = None
         
         for s in ['train', 'val', 'test']:
@@ -45,7 +45,7 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
         os.makedirs(savepath, exist_ok=True)
 
         first_sample_token = curr_scene["first_sample_token"]
-        curr_sample = nusc.get("sample", first_sample_token)
+        curr_sample = coperception_dataset.get("sample", first_sample_token)
 
         # Iterate each sample data
         print("Processing scene {} of agent {} ...".format(scene_idx, current_agent))
@@ -53,7 +53,7 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
         # Added by Yiming, make sure the agent_num equals maximum num (5)
         channel_flag = True
         if channel in curr_sample["data"]:
-            curr_sample_data = nusc.get("sample_data", curr_sample["data"][channel])
+            curr_sample_data = coperception_dataset.get("sample_data", curr_sample["data"][channel])
             # for storing consecutive sequences; the data consists of timestamps, points, etc
             save_data_dict_list = list()
 
@@ -81,14 +81,14 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
         while channel_flag:
 
             (all_pc_teacher, _,) = from_file_multisweep_upperbound_sample_data(
-                nusc, curr_sample_data, return_trans_matrix=False
+                coperception_dataset, curr_sample_data, return_trans_matrix=False
             )
 
             (
                 all_pc_teacher_no_cross_road,
                 _,
             ) = from_file_multisweep_upperbound_sample_data(
-                nusc, curr_sample_data, return_trans_matrix=False, no_cross_road=True
+                coperception_dataset, curr_sample_data, return_trans_matrix=False, no_cross_road=True
             )
 
             # Get the synchronized point clouds
@@ -100,7 +100,7 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
                 target_agent_id,
                 num_sensor,
             ) = from_file_multisweep_warp2com_sample_data(
-                current_agent, nusc, curr_sample_data, return_trans_matrix=True
+                current_agent, coperception_dataset, curr_sample_data, return_trans_matrix=True
             )
 
             assert (
@@ -152,10 +152,10 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
             # First, we need to iterate all the instances, and then retrieve their corresponding bounding boxes
             num_instances = 0  # The number of instances within this sample
             corresponding_sample_token = curr_sample_data["sample_token"]
-            corresponding_sample_rec = nusc.get("sample", corresponding_sample_token)
+            corresponding_sample_rec = coperception_dataset.get("sample", corresponding_sample_token)
 
             for ann_token in corresponding_sample_rec["anns"]:
-                ann_rec = nusc.get("sample_annotation", ann_token)
+                ann_rec = coperception_dataset.get("sample_annotation", ann_token)
                 category_name = ann_rec["category_name"]
                 instance_token = ann_rec["instance_token"]
 
@@ -174,7 +174,7 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
                     _,
                     _,
                 ) = get_instance_boxes_multisweep_sample_data(
-                    nusc,
+                    coperception_dataset,
                     curr_sample_data,
                     instance_token,
                     nsweeps_back=config.nsweeps_back,
@@ -272,7 +272,7 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
                 flag = False
                 for _ in range(config.num_keyframe_skipped + 1):
                     if curr_sample["next"] != "":
-                        curr_sample = nusc.get("sample", curr_sample["next"])
+                        curr_sample = coperception_dataset.get("sample", curr_sample["next"])
                     else:
                         flag = True
                         break
@@ -280,14 +280,14 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
                 if flag:  # No more keyframes
                     break
                 else:
-                    curr_sample_data = nusc.get(
+                    curr_sample_data = coperception_dataset.get(
                         "sample_data", curr_sample["data"][channel]
                     )
             else:
                 flag = False
                 for _ in range(config.skip_frame + 1):
                     if curr_sample_data["next"] != "":
-                        curr_sample_data = nusc.get(
+                        curr_sample_data = coperception_dataset.get(
                             "sample_data", curr_sample_data["next"]
                         )
                     else:
@@ -589,7 +589,7 @@ if __name__ == "__main__":
         "--root",
         default="/mnt/NAS/home/yiming/NeurIPS2021-DiscoNet/V2X-Sim-1.0-raw",
         type=str,
-        help="Root path to nuScenes dataset",
+        help="Root path to CoPerception dataset",
     )
     parser.add_argument(
         "-c", "--current_agent", default=0, type=int, help="current_agent"
@@ -611,8 +611,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    nusc = NuScenes(version="v1.0-mini", dataroot=args.root, verbose=True)
-    print("Total number of scenes:", len(nusc.scene))
+    coperception_dataset = CoPerceptionDataset(version="v1.0-mini", dataroot=args.root, verbose=True)
+    print("Total number of scenes:", len(coperception_dataset.scene))
     scene_begin = args.scene_begin
     scene_end = args.scene_end
 
@@ -622,4 +622,4 @@ if __name__ == "__main__":
     print(f'Parsed files will be saved to {args.savepath}')
 
     for current_agent in range(args.from_agent, args.to_agent):
-        create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args.savepath)
+        create_data(coperception_dataset, current_agent, scene_begin, scene_end, scene_splits, args.savepath)

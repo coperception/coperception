@@ -13,7 +13,7 @@ from coperception.utils.data_util import voxelize_occupy
 from coperception.utils.obj_util import *
 from coperception.utils.v2x_sim_scene_split.parser import parse_scene_files
 
-from nuscenes import NuScenes
+from nuscenes import NuScenes as CoPerceptionDataset
 
 
 def check_folder(folder_name):
@@ -23,7 +23,7 @@ def check_folder(folder_name):
 
 
 # ---------------------- Extract the scenes, and then pre-process them into BEV maps ----------------------
-def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_savepath):
+def create_data(coperception_dataset, current_agent, scene_begin, scene_end, scene_splits, args_savepath):
     channel = "LIDAR_TOP_id_" + str(current_agent)
     channel_bev = "BEV_TOP_id_" + str(current_agent)
     total_sample = 0
@@ -34,9 +34,9 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
     )
 
     for scene_idx in res_scenes[scene_begin:scene_end]:
-        curr_scene = nusc.scene[scene_idx]
+        curr_scene = coperception_dataset.scene[scene_idx]
         first_sample_token = curr_scene["first_sample_token"]
-        curr_sample = nusc.get("sample", first_sample_token)
+        curr_sample = coperception_dataset.get("sample", first_sample_token)
         split = None
         for s in ['train', 'val', 'test']:
             if scene_idx in scene_splits[s]:
@@ -55,8 +55,8 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
         # Added by Yiming, make sure the agent_num equals maximum num (5)
         channel_flag = True
         if channel in curr_sample["data"]:
-            curr_sample_data = nusc.get("sample_data", curr_sample["data"][channel])
-            curr_sample_data_bev = nusc.get(
+            curr_sample_data = coperception_dataset.get("sample_data", curr_sample["data"][channel])
+            curr_sample_data_bev = coperception_dataset.get(
                 "sample_data", curr_sample["data"][channel_bev]
             )
             save_seq_cnt = 0  # only used for save data file name
@@ -85,16 +85,16 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
                 target_agent_id,
                 num_sensor,
             ) = from_file_multisweep_warp2com_sample_data(
-                current_agent, nusc, curr_sample_data, return_trans_matrix=True
+                current_agent, coperception_dataset, curr_sample_data, return_trans_matrix=True
             )
             (all_pc_teacher, _,) = from_file_multisweep_upperbound_sample_data(
-                nusc, curr_sample_data, return_trans_matrix=False
+                coperception_dataset, curr_sample_data, return_trans_matrix=False
             )
             (
                 all_pc_teacher_no_cross_road,
                 _,
             ) = from_file_multisweep_upperbound_sample_data(
-                nusc, curr_sample_data, return_trans_matrix=False, no_cross_road=True
+                coperception_dataset, curr_sample_data, return_trans_matrix=False, no_cross_road=True
             )
 
             # Store point cloud of each sweep
@@ -103,7 +103,7 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
             pc_teacher_no_cross_road = all_pc_teacher_no_cross_road.points
 
             # Store semantics bev of each agent
-            bev_data_path, _, _ = nusc.get_sample_data(curr_sample_data_bev["token"])
+            bev_data_path, _, _ = coperception_dataset.get_sample_data(curr_sample_data_bev["token"])
             bev_pix = np.load(bev_data_path, allow_pickle=True)
 
             # some data comes as .npz format
@@ -179,7 +179,7 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
             flag = False
             for _ in range(config.num_keyframe_skipped + 1):
                 if curr_sample["next"] != "":
-                    curr_sample = nusc.get("sample", curr_sample["next"])
+                    curr_sample = coperception_dataset.get("sample", curr_sample["next"])
                 else:
                     flag = True
                     break
@@ -187,8 +187,8 @@ def create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args_
             if flag:  # No more keyframes
                 break
             else:
-                curr_sample_data = nusc.get("sample_data", curr_sample["data"][channel])
-                curr_sample_data_bev = nusc.get(
+                curr_sample_data = coperception_dataset.get("sample_data", curr_sample["data"][channel])
+                curr_sample_data_bev = coperception_dataset.get(
                     "sample_data", curr_sample["data"][channel_bev]
                 )
 
@@ -274,7 +274,7 @@ if __name__ == "__main__":
         "--root",
         default="/home/dekunma/CS/ai4ce/V2X-Sim-2",
         type=str,
-        help="Root path to nuScenes dataset",
+        help="Root path to CoPerception dataset",
     )
     parser.add_argument(
         "-b", "--scene_begin", default=0, type=int, help="Index of begining scene"
@@ -299,8 +299,8 @@ if __name__ == "__main__":
     # parser.add_argument('-m', '--mode', default='upperbound', type=str, choices=['upperbound', 'lowerbound'])
     args = parser.parse_args()
 
-    nusc = NuScenes(version="v1.0-mini", dataroot=args.root, verbose=True)
-    print("Total number of scenes:", len(nusc.scene))
+    coperception_dataset = CoPerceptionDataset(version="v1.0-mini", dataroot=args.root, verbose=True)
+    print("Total number of scenes:", len(coperception_dataset.scene))
     scene_begin = args.scene_begin
     scene_end = args.scene_end
 
@@ -309,4 +309,4 @@ if __name__ == "__main__":
 
     print(f'Parsed files will be saved to {args.savepath}')
     for current_agent in range(args.from_agent, args.to_agent):
-        create_data(nusc, current_agent, scene_begin, scene_end, scene_splits, args.savepath)
+        create_data(coperception_dataset, current_agent, scene_begin, scene_end, scene_splits, args.savepath)
