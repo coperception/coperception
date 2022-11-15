@@ -23,4 +23,5 @@ Note that CoPerception is in its very early stages of development. If you find a
 ## Tutorials
 - [Individual Models](/tutorials/individual_models)
 - [Collaborative Models](/tutorials/collaborative_models)
-- [Visualization](/tutorials/visualization)
+- [Basic Visualization](/tutorials/basic_visualization)
+- [Advanced Visualization](/tutorials/advanced_visualization)

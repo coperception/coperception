@@ -1,4 +1,4 @@
-# Visualization
+# Basic Visualization
 
 ## Detection dataset
 To visualize voxelized point cloud with ground-truth bounding box:
@@ -116,3 +116,5 @@ The color scheme is defined in `class_to_rgb` in:
 ::: coperception.configs.Config.Config
 
 ![vis_seg_voxel](../assets/images/vis_seg_gt.png)  
+
+Other example basic visualization programs are provided in [coperception/tools/visualization/v2xsim_vistool_basic](https://github.com/coperception/coperception/tree/master/tools/visualization/v2xsim_vistool_basic)
