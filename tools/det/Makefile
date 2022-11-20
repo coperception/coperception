@@ -10,6 +10,8 @@ scene_end := 100
 from_agent := 0
 # Index of the end agent + 1
 to_agent := 6
+# [v2.0 / v2.0-mini]
+dataset_version := v2.0
 
 training_script := train_codet.py
 # Path to the created training data
@@ -52,7 +54,8 @@ create_data:
 	--scene_end $(scene_end) \
 	--savepath $(create_data_save_path) \
 	--from_agent $(from_agent) \
-	--to_agent $(to_agent)
+	--to_agent $(to_agent) \
+	--dataset_version $(dataset_version)
 
 train:
 	python $(training_script) \

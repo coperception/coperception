@@ -295,14 +295,21 @@ if __name__ == "__main__":
     parser.add_argument(
         "--to_agent", default=6, type=int, help="until which agent (index + 1)"
     )
+    parser.add_argument(
+        "--dataset_version", default='v2.0', type=str, help="[v2.0 / v2.0-mini]"
+    )
 
-    # parser.add_argument('-m', '--mode', default='upperbound', type=str, choices=['upperbound', 'lowerbound'])
     args = parser.parse_args()
-
-    coperception_dataset = CoPerceptionDataset(version="v1.0-mini", dataroot=args.root, verbose=True)
-    print("Total number of scenes:", len(coperception_dataset.scene))
+    dataset_version = args.dataset_version
     scene_begin = args.scene_begin
     scene_end = args.scene_end
+
+    if dataset_version == 'v2.0-mini':
+        scene_begin = 0
+        scene_end = 1
+
+    coperception_dataset = CoPerceptionDataset(version=dataset_version, dataroot=args.root, verbose=True)
+    print("Total number of scenes:", len(coperception_dataset.scene))
 
     scene_files_loc = '../../coperception/utils/v2x_sim_scene_split'
     scene_splits = parse_scene_files(scene_files_loc)
