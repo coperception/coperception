@@ -85,6 +85,8 @@ make test_no_rsu com=who2com inference=argmax_test warp_flag=[0/1]
 ```
 ## Results
 
+The number in parentheses indicates the performance gain or loss when RSU is involved during training.  
+
 |   **Method**   |  **Vehicle**  | **Sidewalk**  |  **Terrain**  |    **Road**    | **Building**  | **Pedestrian** | **Vegetation** |   **mIoU**    |
 | :------------: | :-----------: | :-----------: | :-----------: | :------------: | :-----------: | :------------: | :------------: | :-----------: |
 |  Lower-bound   | 45.93 (+2.22) | 42.39 (-2.75) | 47.03 (+0.20) | 65.76 (-1.27)  | 25.38 (-1.89) | 20.59 (-3.09)  | 35.83 (+0.66)  | 36.64 (-0.87) |

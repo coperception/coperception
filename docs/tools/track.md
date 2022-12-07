@@ -45,6 +45,8 @@ make eval
 
 ## Results
 
+The number in parentheses indicates the performance gain or loss when RSU is involved during training.  
+
 |   **Method**   | **MOTA**      | **MOTP**      | **HOTA**      | **DetA**      | **AssA**      | **DetRe**     | **DetPr**     | **AssRe**     | **AssPr**     | **LocA**      |
 | :------------: | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
 |  Lower-bound   | 35.72 (-3.87) | 84.16 (-0.74) | 34.27 (-1.68) | 33.64 (-3.24) | 36.18 (-0.06) | 35.07 (-3.54) | 82.49 (+0.96) | 46.70 (+0.23) | 58.72 (+0.10) | 86.43 (+0.38) |

@@ -103,6 +103,9 @@ make test_warp_no_rsu inference=argmax_test
 
 
 ## Results
+
+Column `Δ` indicates the performance gain or loss when RSU is involved during training.  
+
 |  **Method**   | **AP@0.5 w/o RSU** | AP@0.5 w/ RSU | **Δ** | AP@0.7 w/o RSU | **AP@0.7 w/ RSU** |   Δ   |
 | :-----------: | :----------------: | :-----------: | :---: | :------------: | :---------------: | :---: |
 |  Lower-bound  | 49.90              | 46.96         | -2.94  | 44.21          | 42.33             | -1.88 |
