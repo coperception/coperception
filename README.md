@@ -19,20 +19,12 @@
 
 </div>
 
-## Install:
-1. Clone this repository.
-2. `cd` into the cloned repository.
-3. Install `coperception` package with pip:
-  ```bash
-  pip install -e .
-  ```
-
 ## Getting started:
 Please refer to our docs website for detailed documentations: https://coperception.readthedocs.io/en/latest/  
-Installation:
+### Installation
 - [Installation documentations](https://coperception.readthedocs.io/en/latest/getting_started/installation/)
 
-Download dataset:
+### Download dataset
 - [V2X-Sim](https://coperception.readthedocs.io/en/latest/datasets/v2x_sim/)
 
 How to run the following tasks:
@@ -40,7 +32,7 @@ How to run the following tasks:
 - [Segmentation](https://coperception.readthedocs.io/en/latest/tools/seg/)
 - [Tracking](https://coperception.readthedocs.io/en/latest/tools/track/)
 
-## Supported models:
+## Supported models
 - [x] [DiscoNet](https://arxiv.org/abs/2111.00643)
 - [x] [V2VNet](https://arxiv.org/abs/2008.07519)
 - [x] [When2com](https://arxiv.org/abs/2006.00176)
@@ -50,17 +42,17 @@ How to run the following tasks:
 Download checkpoints: [Google Drive (US)](https://drive.google.com/drive/folders/1NMag-yZSflhNw4y22i8CHTX5l8KDXnNd)  
 See `README.md` in `./tools/det`, `./tools/seg`, and `./tools/track` for model performance under different tasks.
 
-## Supported datasets:
+## Supported datasets
 
 - [x] [V2X-Sim](https://ai4ce.github.io/V2X-Sim/)
 - [ ] [DAIR-V2X](https://thudair.baai.ac.cn/index) (coming soon)
 - [ ] [OPV2V](https://mobility-lab.seas.ucla.edu/opv2v/) (coming soon)
 
-## Related works:
+## Related works
 - [DiscoNet Github repo](https://github.com/ai4ce/DiscoNet)
 - [V2X-Sim Github repo](https://github.com/ai4ce/V2X-Sim)
 
-## Related papers:
+## Related papers
 V2X-Sim dataset:
 ```bibtex
 @article{Li_2021_RAL,
