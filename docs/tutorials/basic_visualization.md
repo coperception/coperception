@@ -1,5 +1,9 @@
 # Basic Visualization
 
+
+Example visualization programs here are based on the **parsed dataset**.  
+Please refer to [V2X-Sim 2.0 tutorial](https://ai4ce.github.io/V2X-Sim/tutorial.html) if you are looking for visualizations for the raw V2X-Sim dataset.
+
 ## Detection dataset
 To visualize voxelized point cloud with ground-truth bounding box:
 ```python
