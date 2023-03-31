@@ -1,4 +1,4 @@
-from nuscenes.nuscenes import NuScenes
+from nuscenes.nuscenes import NuScenes as CoPerceptionDataset
 import os
 import numpy as np
 import torch
@@ -63,7 +63,7 @@ def check_folder(folder_name):
 
 # ---------------------- Extract the scenes, and then pre-process them into BEV maps ----------------------
 def create_data(
-    config, nusc, current_agent, config_global, data_root, scene_idxes_file
+    config, coperception_dataset, current_agent, config_global, data_root, scene_idxes_file
 ):
 
     scene_idxes_file = open(scene_idxes_file, "r")
@@ -84,10 +84,10 @@ def create_data(
         file2id[file] = idx
 
     for scene_idx in scene_idxes:
-        curr_scene = nusc.scene[scene_idx]
+        curr_scene = coperception_dataset.scene[scene_idx]
 
         first_sample_token = curr_scene["first_sample_token"]
-        curr_sample = nusc.get("sample", first_sample_token)
+        curr_sample = coperception_dataset.get("sample", first_sample_token)
 
         instance2id = {}
 
@@ -115,7 +115,7 @@ def create_data(
         frame = 0
         while True:
             if channel in curr_sample["data"]:
-                sample_data = nusc.get("sample_data", curr_sample["data"][channel])
+                sample_data = coperception_dataset.get("sample_data", curr_sample["data"][channel])
             else:
                 break
             anns = curr_sample["anns"]
@@ -159,7 +159,7 @@ def create_data(
             gt = get_gt_corners(config, data)
             num_instance = 0
             for ann in anns:
-                ann = nusc.get("sample_annotation", ann)
+                ann = coperception_dataset.get("sample_annotation", ann)
                 instance_token = ann["instance_token"]
 
                 # ====== valid category ======
@@ -177,7 +177,7 @@ def create_data(
                     _,
                     _,
                 ) = get_instance_boxes_multisweep_sample_data(
-                    nusc,
+                    coperception_dataset,
                     sample_data,
                     instance_token,
                     nsweeps_back=config.nsweeps_back,
@@ -232,7 +232,7 @@ def create_data(
             ), f"len gt: {len(gt)}, num instance: {num_instance}"
             if curr_sample["next"] == "":
                 break
-            curr_sample = nusc.get("sample", curr_sample["next"])
+            curr_sample = coperception_dataset.get("sample", curr_sample["next"])
         f.close()
     print("total instance:", len(instance2id))
 
@@ -246,13 +246,6 @@ if __name__ == "__main__":
         "-s", "--split", type=str, help="The data split [train/val/test]"
     )
     parser.add_argument(
-        "-p",
-        "--savepath",
-        default="./dataset/",
-        type=str,
-        help="Directory for saving the generated data",
-    )
-    parser.add_argument(
         "--num_agent", default=6, type=int, help="The total number of agents"
     )
     parser.add_argument("--scene_idxes_file", type=str, help="File containing idxes of scenes to run tracking")
@@ -264,17 +257,16 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    nusc = NuScenes(version="v1.0-mini", dataroot=args.root, verbose=True)
-    print("Total number of scenes:", len(nusc.scene))
+    coperception_dataset = CoPerceptionDataset(version="v2.0", dataroot=args.root, verbose=True)
+    print("Total number of scenes:", len(coperception_dataset.scene))
     
     for current_agent in range(args.from_agent, args.to_agent):
         scene_idxes_file = args.scene_idxes_file
 
-        savepath = check_folder(args.savepath + args.split + "/agent" + str(current_agent))
         config = Config(
-            args.split, True, savepath=savepath, is_cross_road=current_agent == 0
+            args.split, True, is_cross_road=current_agent == 0
         )
-        config_global = ConfigGlobal(args.split, True, savepath=savepath)
+        config_global = ConfigGlobal(args.split, True)
         create_data(
-            config, nusc, current_agent, config_global, args.data, scene_idxes_file
+            config, coperception_dataset, current_agent, config_global, args.data, scene_idxes_file
         )
