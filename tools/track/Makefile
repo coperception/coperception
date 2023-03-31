@@ -8,18 +8,18 @@ mode := disco
 rsu := no_rsu
 # Index of current agent
 current_agent := 0
-# [train / test / val]
+# [test / val]
 split := test
 # det path
 det_path := /scratch/dm4524/ai4ce/coperception/tools/det
 # file containing idxes of scenes to run tracking
-scene_idxes_file := /scratch/dm4524/ai4ce/coperception/coperception/utils/test_scenes.txt
+scene_idxes_file := /scratch/dm4524/ai4ce/coperception/coperception/utils/v2x_sim_scene_split/$(split)_scenes.txt
 # Index of the start agent
-from_agent := 1
+from_agent := 0
 # Index of the end agent + 1
 to_agent := 6
 # Det logs path (to get the tracking input)
-det_logs_path := $(det_path)/logs_compress_0
+det_logs_path := $(det_path)/logs
 
 .PHONY: sort
 
