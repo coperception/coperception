@@ -85,7 +85,7 @@ train_disco:
 	--compress_level $(compress_level) \
 	--pose_noise $(pose_noise) \
 	--only_v2i $(only_v2i) \
-	-- rsu 1
+	--rsu 1
 
 train_disco_no_rsu:
 	python $(training_script) \
@@ -100,7 +100,7 @@ train_disco_no_rsu:
 	--compress_level $(compress_level) \
 	--pose_noise $(pose_noise) \
 	--only_v2i $(only_v2i) \
-	-- rsu 0
+	--rsu 0
 
 test:
 	python $(testing_script) \
