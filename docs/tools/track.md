@@ -3,8 +3,8 @@
 Here we implements the sort algorithm as our benchmark trackers and use the detection results obtained from [here](../det) to evaluate.
 
 ## Preparation
-- Download V2XSIM datasets from our [website](https://ai4ce.github.io/V2X-Sim/index.html)
-- Prepare tracking ground truth:
+- Download V2XSIM datasets from our [website](https://ai4ce.github.io/V2X-Sim/download.html)
+- Prepare tracking ground truth. You can also download the preprocessed dataset directly from the web page provided above.
 ```bash
 make create_data
 ```

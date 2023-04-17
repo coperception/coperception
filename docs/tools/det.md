@@ -4,8 +4,8 @@ We implement lowerbound, upperbound, when2com, who2com, V2VNet as our benchmark 
 
 ## Preparation
 
-- Download V2XSIM datasets from our [website](https://ai4ce.github.io/V2X-Sim/index.html)
-- Run the code below to generate preprocessed data
+- Download V2X-Sim 2.0 datasets from our [website](https://ai4ce.github.io/V2X-Sim/download.html).
+- Run the code below to generate preprocessed dataset. You can also download the preprocessed dataset directly from the web page provided above.
 ```bash
 make create_data
 ```
