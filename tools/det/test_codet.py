@@ -471,10 +471,10 @@ def main(args):
         )
     )
 
-    for k in range(eval_start_idx, num_agent):
+    for k in range(num_agent - 1 if args.rsu else num_agent):
         print_and_write_log(
             "agent{} mAP@0.5 is {} and mAP@0.7 is {}".format(
-                k + 1 if not args.rsu else k, mean_ap_local[k * 2], mean_ap_local[(k * 2) + 1]
+                k + 1, mean_ap_local[k * 2], mean_ap_local[(k * 2) + 1]
             )
         )
 
