@@ -114,7 +114,7 @@ class V2XSimSeg(Dataset):
             gt_data_handle = np.load(seq_file, allow_pickle=True)
             if gt_data_handle == 0:
                 empty_flag = True
-                if self.com != 'lowerbound' and self.com != 'upperbound':
+                if self.com != 'lowerbound' and self.com != 'upperbound' and self.bound != 'both':
                     return (
                         torch.zeros((256, 256, 13)).bool(),
                         torch.zeros((256, 256, 13)).bool(),
@@ -169,7 +169,7 @@ class V2XSimSeg(Dataset):
             padded_voxel_points_teacher = np.stack(padded_voxel_points_teacher, 0)
             padded_voxel_points_teacher = np.squeeze(padded_voxel_points_teacher, 0)
 
-            if self.com != 'lowerbound' and self.com != 'upperbound':
+            if self.com != 'lowerbound' and self.com != 'upperbound' and self.bound != 'both':
                 if self.rsu:
                     trans_matrices = gt_dict["trans_matrices"]
                 else:
