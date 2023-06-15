@@ -432,7 +432,7 @@ def main(args):
         mean_ap_local.append(mean_ap)
         print_and_write_log("Local mAP@0.7 from agent {}".format(k))
 
-        ean_ap, _ = eval_map(
+        mean_ap, _ = eval_map(
             det_results_local[k],
             annotations_local[k],
             scale_ranges=None,
