@@ -345,17 +345,19 @@ def main(args):
                     os.path.join(seq_save, idx_save),
                 )
 
-            # # plot the cell-wise edge
-            # if flag == "disco" and k < len(save_agent_weight_list):
-            #     one_agent_edge = save_agent_weight_list[k]
-            #     for kk in range(len(one_agent_edge)):
-            #         idx_edge_save = (
-            #             str(idx) + "_edge_" + str(kk) + "_to_" + str(k) + ".png"
-            #         )
-            #         savename_edge = os.path.join(seq_save, idx_edge_save)
-            #         sns.set()
-            #         plt.savefig(savename_edge, dpi=500)
-            #         plt.close(0)
+            # plot the cell-wise edge
+            if flag == "disco" and args.visualization and k < len(save_agent_weight_list):
+                one_agent_edge = save_agent_weight_list[k]
+                for kk in range(len(one_agent_edge)):
+                    idx_edge_save = (
+                        str(idx) + "_edge_" + str(kk) + "_to_" + str(k) + ".png"
+                    )
+                    savename_edge = os.path.join(seq_save, idx_edge_save)
+                    sns.set()
+                    sns.heatmap(one_agent_edge[kk].cpu())
+                    plt.savefig(savename_edge, dpi=500)
+                    plt.clf()
+                    plt.close(0)
 
             # == tracking ==
             if args.tracking:
