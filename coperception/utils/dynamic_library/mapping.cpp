@@ -7,7 +7,7 @@ struct UnknownParam {
 	int z;
 }; 
 
-int sub_7FF446E16480(std::vector<UnknownParam>& a1,const Eigen::Matrix<float, Eigen::Dynamic, 1>& a2,const Eigen::Matrix<float, Eigen::Dynamic, 1>& a3,const Eigen::Matrix<float, Eigen::Dynamic, 1>& a4,float a5) {
+long long sub_7FF446E16480(std::vector<UnknownParam>& a1,const Eigen::Matrix<float, Eigen::Dynamic, 1>& a2,const Eigen::Matrix<float, Eigen::Dynamic, 1>& a3,const Eigen::Matrix<float, Eigen::Dynamic, 1>& a4,float a5) {
 	auto v66 = UnknownParam {
 		(int)std::floor(a2[0]/a5),(int)std::floor(a2[1]/a5),(int)std::floor(a2[2]/0.4)
 	};
@@ -69,17 +69,17 @@ int sub_7FF446E16480(std::vector<UnknownParam>& a1,const Eigen::Matrix<float, Ei
 	}
 	return 0;
 }
-
 Eigen::Matrix<float, Eigen::Dynamic, 1> compute_logodds_dp(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> & a2,Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& a3,Eigen::Matrix<float, Eigen::Dynamic, 1>& a4,std::vector<int>& a5,double a6,double a7,double a8) {
     int v14 = (int)((a4[3]-a4[0])/a6);
     int v15 = (int)((a4[4]-a4[1])/a6);
     double v16 = std::ceil((a4[5]-a4[2])/0.4);
     Eigen::Matrix<float, Eigen::Dynamic, 1> ret = Eigen::MatrixXf::Zero(v14*v15*v16,1);
     auto v55 = Eigen::Vector3f(v14,v15,v16);
-    auto  v56= a3.row(0).transpose() - Eigen::Vector3f(a4[0],a4[1],a4[2]);
+    auto  v56= a3.row(0).transpose() - a4.block<3,1>(0,0);
+
     for (auto index:a5) {
     	
-    	auto v57 = a2.row(index).transpose() - Eigen::Vector4f(a4[0],a4[1],a4[2],0);
+		auto v57 = a2.row(index).transpose() - a4.block<4,1>(0,0);
     	std::vector<UnknownParam> params;
 		int result = sub_7FF446E16480(params, v56,v57,v55,a6);
 		if (!params.empty()) {
