@@ -12,13 +12,13 @@ git clone https://github.com/coperception/coperception.git
 cd coperception
 ```
 
-Create a conda environment with the dependencies:
+Create and activate a conda environment named coperception
 ```bash
-conda env create -f environment.yml
+conda create -n coperception python=3.7
 conda activate coperception
 ```
 
-If conda installation failed, install the dependencies through pip:  
+Install dependencies via pip:  
 (Make sure your Python version is `3.7`)
 ```bash
 pip install -r requirements.txt
