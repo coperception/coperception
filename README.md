@@ -2,7 +2,7 @@
   
 # CoPerception
   <p align="center">
-    SDK for collaborative perception.
+    An SDK for collaborative perception
   </p>
 
 [![Documentation Status](https://readthedocs.org/projects/coperception/badge/?version=latest)](https://coperception.readthedocs.io/en/latest/?badge=latest)
