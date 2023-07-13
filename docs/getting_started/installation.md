@@ -1,7 +1,7 @@
 # Installation
 
 ## Supported environments
-- **System**: Ubuntu 18.4; RHEL 8.4
+- **Systems**: Ubuntu 18.4; RHEL 8.4; Windows 11
 - **Python**: 3.7
 ---
 ## Installation
