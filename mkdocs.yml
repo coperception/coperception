@@ -19,8 +19,6 @@ nav:
     - tools/track.md
   - datasets:
     - datasets/v2x_sim.md
-  - tutorials:
-    - tutorials/individual_models.md
-    - tutorials/collaborative_models.md
-    - tutorials/basic_visualization.md
-    - tutorials/advanced_visualization.md
+  - visualization:
+    - visualization/basic_visualization.md
+    - visualization/advanced_visualization.md
